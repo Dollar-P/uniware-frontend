@@ -10,10 +10,10 @@ function RegisterPage() {
         <img className="uniware-logo" src={uniwareLogo} alt="UniWare" />
         <p className="intro-statement">
           <span>Searching</span>
-          <span>Reserving</span>
           <span>Borrowing</span>
-          <span>Returning</span>
-          <span className="intro-ending">and Managing University Equipments</span>
+          <span>Providing</span>
+          <span>Managing</span>
+          <span className="intro-ending">University Equipments</span>
         </p>
       </section>
       <section className="register-panel" aria-labelledby="signup-title">

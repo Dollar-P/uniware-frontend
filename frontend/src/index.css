@@ -1,28 +1,28 @@
-* {
-  box-sizing: border-box;
+:root {
+  color-scheme: light;
+  --color-primary: #478BAE;
+  --color-background: #D4D3D2;
+  --color-surface: #F4F3F2;
+  --color-line: #676665;
+  --color-text: #343332;
+  --color-muted: var(--color-line);
+  --color-error: #9B3D37;
+  --color-success: #38664B;
+  --font-main: "Google Sans Flex", "Google Sans", -apple-system, BlinkMacSystemFont,
+    system-ui, "Segoe UI", "Noto Sans Thai", Tahoma, Arial, sans-serif;
+  --font-weight: 400;
+  --font-grade: 25;
 }
-
+* { box-sizing: border-box; }
 html {
-  font-family:
-    Inter,
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
+  font-family: var(--font-main);
+  font-weight: var(--font-weight);
+  font-optical-sizing: auto;
+  font-variation-settings: "GRAD" var(--font-grade);
+  font-synthesis: none;
+  background: var(--color-background);
 }
-
-body {
-  margin: 0;
-
-  min-width: 320px;
-  min-height: 100vh;
-
-  color: #1f2937;
-}
-
-button,
-input {
-  font: inherit;
-}
+body { margin: 0; min-width: 320px; min-height: 100vh; color: var(--color-text); }
+button, input { font: inherit; font-optical-sizing: inherit; font-variation-settings: inherit; }
+button, input, a { -webkit-tap-highlight-color: transparent; }
+::selection { background: var(--color-primary); color: var(--color-surface); }

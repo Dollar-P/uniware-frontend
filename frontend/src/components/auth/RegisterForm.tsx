@@ -1,178 +1,72 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-
 import { registerUser } from '../../services/authApi';
 import { validateRegistration } from '../../utils/validation';
-
-import type {
-  RegisterFormErrors,
-} from '../../types/auth';
-
+import { RegistrationError } from '../../types/auth';
+import type { RegisterFormData, RegisterFormErrors } from '../../types/auth';
+const emptyForm: RegisterFormData = {
+  first_name: '', last_name: '', email: '', password: '', department: '',
+};
+const fields = [
+  { key: 'first_name', label: 'First name', type: 'text', autoComplete: 'given-name' },
+  { key: 'last_name', label: 'Last name', type: 'text', autoComplete: 'family-name' },
+  { key: 'email', label: 'University Email', type: 'email', autoComplete: 'email' },
+  { key: 'department', label: 'Department (optional)', type: 'text', autoComplete: 'organization' },
+  { key: 'password', label: 'Password', type: 'password', autoComplete: 'new-password' },
+] as const;
 function RegisterForm() {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-
-  const [errors, setErrors] =
-    useState<RegisterFormErrors>({});
-
-  const [isLoading, setIsLoading] =
-    useState(false);
-
-  const [successMessage, setSuccessMessage] =
-    useState('');
-
-  const [apiError, setApiError] =
-    useState('');
-
-  async function handleSubmit(
-    event: FormEvent<HTMLFormElement>
-  ) {
+  const [form, setForm] = useState<RegisterFormData>(emptyForm);
+  const [errors, setErrors] = useState<RegisterFormErrors>({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [apiError, setApiError] = useState('');
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-
+    if (isLoading) return;
     setSuccessMessage('');
     setApiError('');
-
-    const formData = {
-      name,
-      email,
-      password,
-    };
-
-    const validationErrors =
-      validateRegistration(formData);
-
+    const data = { ...form, first_name: form.first_name.trim(), last_name: form.last_name.trim(),
+      email: form.email.trim().toLowerCase(), department: form.department?.trim() ?? '' };
+    const validationErrors = validateRegistration(data);
     setErrors(validationErrors);
-
-    if (Object.keys(validationErrors).length > 0) {
-      return;
-    }
-
+    if (Object.keys(validationErrors).length > 0) return;
     try {
       setIsLoading(true);
-
-      const response = await registerUser(formData);
-
-      setSuccessMessage(response.message);
-
-      setName('');
-      setEmail('');
-      setPassword('');
+      await registerUser(data);
+      setSuccessMessage('Registration successful');
+      setForm(emptyForm);
     } catch (error) {
-      if (error instanceof Error) {
-        setApiError(error.message);
-      } else {
-        setApiError(
-          'Something went wrong. Please try again.'
-        );
-      }
+      if (error instanceof RegistrationError) setErrors(error.fields);
+      setApiError(error instanceof Error ? error.message : 'Something went wrong. Please try again.');
     } finally {
       setIsLoading(false);
     }
   }
-
   return (
-    <form
-      className="register-form"
-      onSubmit={handleSubmit}
-    >
-      <div className="form-field">
-        <label htmlFor="name">
-          Name
-        </label>
-
-        <input
-          id="name"
-          name="name"
-          type="text"
-          placeholder="Your name"
-          value={name}
-          onChange={(event) =>
-            setName(event.target.value)
-          }
-        />
-
-        {errors.name && (
-          <p className="form-error">
-            {errors.name}
-          </p>
-        )}
-      </div>
-
-      <div className="form-field">
-        <label htmlFor="email">
-          University Email
-        </label>
-
-        <input
-          id="email"
-          name="email"
-          type="email"
-          placeholder="XXXXXXXXXX@student.chula.ac.th"
-          value={email}
-          onChange={(event) =>
-            setEmail(event.target.value)
-          }
-        />
-
-        {errors.email && (
-          <p className="form-error">
-            {errors.email}
-          </p>
-        )}
-      </div>
-
-      <div className="form-field">
-        <label htmlFor="password">
-          Password
-        </label>
-
-        <input
-          id="password"
-          name="password"
-          type="password"
-          placeholder="Create a password"
-          value={password}
-          onChange={(event) =>
-            setPassword(event.target.value)
-          }
-        />
-
-        <p className="form-help">
-          At least 8 characters with uppercase,
-          lowercase, and a number.
-        </p>
-
-        {errors.password && (
-          <p className="form-error">
-            {errors.password}
-          </p>
-        )}
-      </div>
-
-      {apiError && (
-        <div className="form-message form-message-error">
-          {apiError}
+    <form className="register-form" onSubmit={handleSubmit} noValidate>
+      {fields.map(({ key, label, type, autoComplete }) => (
+        <div className="form-field" key={key}>
+          <label htmlFor={key}>{label}</label>
+          <input id={key} name={key} type={type} autoComplete={autoComplete}
+            required={key !== 'department'} disabled={isLoading} value={form[key]}
+            aria-invalid={Boolean(errors[key])}
+            aria-describedby={[errors[key] ? `${key}-error` : '', key === 'password' ? 'password-help' : ''].filter(Boolean).join(' ') || undefined}
+            onChange={(event) => setForm({ ...form, [key]: event.target.value })} />
+          {key === 'password' && (
+            <p className="form-help" id="password-help">
+              At least 10 characters. Avoid common passwords, entirely numeric passwords,
+              and passwords similar to your name or email.
+            </p>
+          )}
+          {errors[key] && <p className="form-error" id={`${key}-error`}>{errors[key]}</p>}
         </div>
-      )}
-
-      {successMessage && (
-        <div className="form-message form-message-success">
-          {successMessage}
-        </div>
-      )}
-
-      <button
-        className="register-button"
-        type="submit"
-        disabled={isLoading}
-      >
-        {isLoading
-          ? 'Creating account...'
-          : 'Create Account'}
+      ))}
+      {apiError && <div className="form-message form-message-error" role="alert">{apiError}</div>}
+      {successMessage && <div className="form-message form-message-success" role="status">{successMessage}</div>}
+      <button className="register-button" type="submit" disabled={isLoading}>
+        {isLoading ? 'Creating account...' : 'Create Account'}
       </button>
     </form>
   );
 }
-
 export default RegisterForm;

@@ -15,7 +15,7 @@ function RegisterPage() {
           <h1>Create your account</h1>
 
           <p className="register-subtitle">
-            *Use your @student.chula.ac.th to get started.
+            Use your @chula.ac.th email or a university subdomain to get started.
           </p>
         </div>
 

@@ -1,3 +1,5 @@
+> Historical implementation notes: the registration frontend now follows the current Django backend. See [API contract](api-contract.md) for current fields, validation rules, response shapes, and setup. The single-name, student-ID-only, 8-character password, and mock-default examples below describe the earlier prototype.
+
 # US1-1 — Register Account
 
 เอกสารนี้อธิบายรายละเอียดการพัฒนา **US1-1 Register Account** ของ UniWare ใน Sprint 1

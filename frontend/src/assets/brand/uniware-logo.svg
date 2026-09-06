@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="1200"
+   height="630"
+   viewBox="0 0 1200 630"
+   version="1.1"
+   id="svg1"
+   sodipodi:docname="uniware-logo.svg"
+   inkscape:version="1.4.4 (dcaf3e7d9e, 2026-05-05)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="0.42321429"
+     inkscape:cx="450.12658"
+     inkscape:cy="344.9789"
+     inkscape:window-width="1920"
+     inkscape:window-height="1122"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs1" />
+  <g
+     id="layer1">
+    <text
+       xml:space="preserve"
+       style="font-size:279.464px;line-height:0.9;writing-mode:lr-tb;direction:ltr;fill:#ff96c8;stroke:#4a91b5;stroke-width:14.688;stroke-dasharray:none;stroke-opacity:1;paint-order:fill markers stroke"
+       x="19.792986"
+       y="398.83951"
+       id="text1"><tspan
+         id="tspan1"
+         x="19.792986"
+         y="398.83951"
+         style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:279.464px;line-height:0.9;font-family:'Tlwg Mono';-inkscape-font-specification:'Tlwg Mono Bold';fill:none;stroke:#478bae;stroke-width:14.688;stroke-dasharray:none;stroke-opacity:1">UniWare</tspan></text>
+  </g>
+</svg>

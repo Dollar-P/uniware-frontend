@@ -24,7 +24,7 @@ describe('RegisterForm', () => {
     });
     render(<RegisterForm />);
     const user = await fillForm();
-    await user.click(screen.getByRole('button', { name: 'Create Account' }));
+    await user.click(screen.getByRole('button', { name: 'Sign up' }));
     expect(mockedRegisterUser).toHaveBeenCalledWith({
       first_name: 'Putter', last_name: 'Smith', email: 'putter@chula.ac.th',
       password: 'unusual phrase here', department: '',
@@ -39,7 +39,7 @@ describe('RegisterForm', () => {
     }));
     render(<RegisterForm />);
     const user = await fillForm();
-    await user.click(screen.getByRole('button', { name: 'Create Account' }));
+    await user.click(screen.getByRole('button', { name: 'Sign up' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Invalid registration.');
     expect(screen.getByText('This password is too common.')).toBeInTheDocument();
     expect(screen.getByLabelText('Password')).toHaveAttribute('aria-invalid', 'true');
@@ -47,7 +47,7 @@ describe('RegisterForm', () => {
   });
   it('blocks missing required fields', async () => {
     render(<RegisterForm />);
-    await userEvent.click(screen.getByRole('button', { name: 'Create Account' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Sign up' }));
     expect(screen.getByText('First name is required')).toBeInTheDocument();
     expect(screen.getByText('Last name is required')).toBeInTheDocument();
     expect(mockedRegisterUser).not.toHaveBeenCalled();

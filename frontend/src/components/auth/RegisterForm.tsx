@@ -64,7 +64,7 @@ function RegisterForm() {
       {apiError && <div className="form-message form-message-error" role="alert">{apiError}</div>}
       {successMessage && <div className="form-message form-message-success" role="status">{successMessage}</div>}
       <button className="register-button" type="submit" disabled={isLoading}>
-        {isLoading ? 'Creating account...' : 'Create Account'}
+        {isLoading ? 'Signing up...' : 'Sign up'}
       </button>
     </form>
   );

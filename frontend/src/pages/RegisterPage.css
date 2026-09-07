@@ -82,6 +82,9 @@
 .chula-logo { width: 140px; height: auto; }
 .auth-switch { margin-top: 24px; text-align: center; }
 .auth-switch .register-button { display: flex; align-items: center; justify-content: center; text-decoration: none; width: 100%; }
+.auth-switch .register-button { color: var(--color-auth-switch); border-color: var(--color-auth-switch); }
+.auth-switch .register-button:hover,
+.auth-switch .register-button:focus-visible { outline-color: var(--color-auth-switch); }
 .auth-switch .register-subtitle { margin-top: 8px; }
 .account-page { min-height: 100svh; padding: clamp(24px, 6vw, 80px); background: var(--color-surface); }
 .account-content { max-width: 640px; margin: 48px auto; }

@@ -80,6 +80,16 @@
 .register-button:disabled, .form-field input:disabled { opacity: .6; cursor: wait; }
 .register-footer { display: flex; justify-content: center; margin-top: 32px; }
 .chula-logo { width: 140px; height: auto; }
+.auth-switch { margin-top: 24px; text-align: center; }
+.auth-switch .register-button { display: flex; align-items: center; justify-content: center; text-decoration: none; width: 100%; }
+.auth-switch .register-subtitle { margin-top: 8px; }
+.account-page { min-height: 100svh; padding: clamp(24px, 6vw, 80px); background: var(--color-surface); }
+.account-content { max-width: 640px; margin: 48px auto; }
+.account-content h1 { font-weight: var(--font-weight); }
+.account-details { border-top: 1px solid var(--color-line); }
+.account-details div { padding: 20px 0; border-bottom: 1px solid var(--color-line); }
+.account-details dt { color: var(--color-muted); font-size: 14px; }
+.account-details dd { margin: 8px 0 0; overflow-wrap: anywhere; }
 @media (min-width: 1600px) {
   .register-panel { padding-top: 80px; padding-bottom: 80px; }
   .register-form { gap: 22px; }

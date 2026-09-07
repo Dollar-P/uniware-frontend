@@ -30,3 +30,16 @@ export async function currentUser(): Promise<RegisterResponse | null> {
   if (response.status === 401) return null;
   return readUser(response);
 }
+
+export async function logout(): Promise<void> {
+  const token = document.cookie.split('; ').find(value => value.startsWith('csrftoken='));
+  const headers: Record<string, string> = {};
+  if (token) headers['X-CSRFToken'] = decodeURIComponent(token.slice(10));
+  const response = await fetch(`${baseUrl}/auth/logout`, {
+    method: 'POST', credentials: 'include', headers,
+  });
+  // An expired session is already logged out. Do not parse the empty 204 body.
+  if (response.ok || response.status === 401) return;
+  const body: ApiError | null = await response.json().catch(() => null);
+  throw new SessionError(body?.error?.message || 'Unable to log out. Please try again.', response.status);
+}

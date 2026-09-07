@@ -1,6 +1,7 @@
 :root {
   color-scheme: light;
   --color-primary: #478BAE;
+  --color-logout: #8B0000;
   --color-auth-switch: #DA5F8E;
   --color-background: #E4E3E2;
   --color-surface: #F4F3F2;

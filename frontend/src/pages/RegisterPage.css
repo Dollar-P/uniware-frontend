@@ -81,6 +81,9 @@
 .register-footer { display: flex; justify-content: center; margin-top: 32px; }
 .chula-logo { width: 140px; height: auto; }
 .auth-switch { margin-top: 24px; text-align: center; }
+.logout-button { color: var(--color-logout); border-color: var(--color-logout); min-width: 160px; }
+.logout-button:hover:not(:disabled),
+.logout-button:focus-visible { outline-color: var(--color-logout); }
 .auth-switch .register-button { display: flex; align-items: center; justify-content: center; text-decoration: none; width: 100%; }
 .auth-switch .register-button { color: var(--color-auth-switch); border-color: var(--color-auth-switch); }
 .auth-switch .register-button:hover,

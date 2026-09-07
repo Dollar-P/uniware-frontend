@@ -35,5 +35,8 @@ Check invalid login, valid login, refresh on #account, and anonymous access in
 a fresh browser context. Existing backend login tests are in
 apps/accounts/tests/test_us1_2_login.py.
 
-The backend Docker daemon was unavailable during implementation, so live
-Django acceptance and backend test execution remain to be run.
+Live browser acceptance passed against Django on 2026-09-07 using a temporary
+account: invalid password rejection, successful login, session restoration
+after refresh, and anonymous redirection after removing browser cookies.
+The temporary account was removed afterward. The standalone backend test
+suite has not been run as part of this frontend change.

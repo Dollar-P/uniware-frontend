@@ -1,152 +1,55 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-
 import RegisterForm from './RegisterForm';
 import { registerUser } from '../../services/authApi';
-
-vi.mock('../../services/authApi', () => ({
-  registerUser: vi.fn(),
-}));
-
+import { RegistrationError } from '../../types/auth';
+vi.mock('../../services/authApi', () => ({ registerUser: vi.fn() }));
 const mockedRegisterUser = vi.mocked(registerUser);
-
+async function fillForm() {
+  const user = userEvent.setup();
+  await user.type(screen.getByLabelText('First name'), ' Putter ');
+  await user.type(screen.getByLabelText('Last name'), 'Smith');
+  await user.type(screen.getByLabelText('University Email'), 'PUTTER@chula.ac.th');
+  await user.type(screen.getByLabelText('Password'), 'unusual phrase here');
+  return user;
+}
 describe('RegisterForm', () => {
-  beforeEach(() => {
-    mockedRegisterUser.mockReset();
-  });
-
-  it('submits valid registration data and shows success message', async () => {
+  beforeEach(() => { mockedRegisterUser.mockReset(); });
+  it('submits backend fields and accepts a bare user response', async () => {
     mockedRegisterUser.mockResolvedValue({
-      message: 'Registration successful',
-      user: {
-        id: 'user-1',
-        name: 'Putter',
-        email: '6731234521@student.chula.ac.th',
-        role: 'BORROWER',
-      },
+      id: 'user-1', first_name: 'Putter', last_name: 'Smith', email: 'putter@chula.ac.th',
+      department: '', is_admin: false, is_provider: false, is_borrower: true,
+      account_status: 'ACTIVE', date_joined: '2026-09-06T00:00:00Z',
     });
-
-    const user = userEvent.setup();
-
     render(<RegisterForm />);
-
-    await user.type(
-      screen.getByLabelText('Name'),
-      'Putter'
-    );
-
-    await user.type(
-      screen.getByLabelText('University Email'),
-      '6731234521@student.chula.ac.th'
-    );
-
-    await user.type(
-      screen.getByLabelText('Password'),
-      'Uniware123'
-    );
-
-    await user.click(
-      screen.getByRole('button', {
-        name: 'Create Account',
-      })
-    );
-
+    const user = await fillForm();
+    await user.click(screen.getByRole('button', { name: 'Sign up' }));
     expect(mockedRegisterUser).toHaveBeenCalledWith({
-      name: 'Putter',
-      email: '6731234521@student.chula.ac.th',
-      password: 'Uniware123',
+      first_name: 'Putter', last_name: 'Smith', email: 'putter@chula.ac.th',
+      password: 'unusual phrase here', department: '',
     });
-
-    expect(
-      await screen.findByText('Registration successful')
-    ).toBeInTheDocument();
-
-    expect(screen.getByLabelText('Name')).toHaveValue('');
-    expect(
-      screen.getByLabelText('University Email')
-    ).toHaveValue('');
-    expect(
-      screen.getByLabelText('Password')
-    ).toHaveValue('');
+    expect(await screen.findByRole('status')).toHaveTextContent('Registration successful');
+    expect(screen.getByLabelText('First name')).toHaveValue('');
+    expect(screen.getByLabelText('Password')).toHaveValue('');
   });
-
-  it('shows API error when email already exists', async () => {
-    mockedRegisterUser.mockRejectedValue(
-      new Error(
-        'An account with this email already exists.'
-      )
-    );
-
-    const user = userEvent.setup();
-
+  it('displays server field errors and preserves input', async () => {
+    mockedRegisterUser.mockRejectedValue(new RegistrationError('Invalid registration.', {
+      password: 'This password is too common.',
+    }));
     render(<RegisterForm />);
-
-    await user.type(
-      screen.getByLabelText('Name'),
-      'Putter'
-    );
-
-    await user.type(
-      screen.getByLabelText('University Email'),
-      '1111111111@student.chula.ac.th'
-    );
-
-    await user.type(
-      screen.getByLabelText('Password'),
-      'Uniware123'
-    );
-
-    await user.click(
-      screen.getByRole('button', {
-        name: 'Create Account',
-      })
-    );
-
-    expect(
-      await screen.findByText(
-        'An account with this email already exists.'
-      )
-    ).toBeInTheDocument();
-
-    expect(screen.getByLabelText('Name')).toHaveValue(
-      'Putter'
-    );
-
-    expect(
-      screen.getByLabelText('University Email')
-    ).toHaveValue(
-      '1111111111@student.chula.ac.th'
-    );
+    const user = await fillForm();
+    await user.click(screen.getByRole('button', { name: 'Sign up' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('Invalid registration.');
+    expect(screen.getByText('This password is too common.')).toBeInTheDocument();
+    expect(screen.getByLabelText('Password')).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByLabelText('Last name')).toHaveValue('Smith');
   });
-
-  it('does not call API when form data is invalid', async () => {
-    const user = userEvent.setup();
-
+  it('blocks missing required fields', async () => {
     render(<RegisterForm />);
-
-    await user.type(
-      screen.getByLabelText('University Email'),
-      '1234567890@gmail.com'
-    );
-
-    await user.type(
-      screen.getByLabelText('Password'),
-      'password'
-    );
-
-    await user.click(
-      screen.getByRole('button', {
-        name: 'Create Account',
-      })
-    );
-
-    expect(
-      await screen.findByText('Name is required')
-    ).toBeInTheDocument();
-
-    expect(
-      mockedRegisterUser
-    ).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', { name: 'Sign up' }));
+    expect(screen.getByText('First name is required')).toBeInTheDocument();
+    expect(screen.getByText('Last name is required')).toBeInTheDocument();
+    expect(mockedRegisterUser).not.toHaveBeenCalled();
   });
 });

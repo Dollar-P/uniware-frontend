@@ -1,211 +1,58 @@
-# UniWare API Contract
+# UniWare registration API contract
 
-This document defines the API contract shared between the UniWare frontend and backend.
-
----
-
-# Authentication
-
-## Register Account
-
-### Endpoint
-
-```http
-POST /api/auth/register
-```
-
-### Description
-
-Creates a new UniWare account using a Chulalongkorn University student email.
-
-Self-registration always creates a `BORROWER` account.
-
-The client must not be allowed to choose its own role.
-
----
-
-## Request
-
-### Content-Type
-
-```text
-application/json
-```
-
-### Body
+POST `/api/auth/register` accepts JSON:
 
 ```json
 {
-  "name": "Putter",
-  "email": "6731234521@student.chula.ac.th",
-  "password": "Uniware123"
+  "first_name": "Putter",
+  "last_name": "Smith",
+  "email": "putter@chula.ac.th",
+  "password": "unusual phrase here",
+  "department": "Engineering"
 }
 ```
 
-### Fields
+First and last names are required, trimmed, and limited to 150 characters.
+The backend rejects digits and specified special characters in names.
+Department is optional (maximum 255 characters).
+Email is normalized to lowercase. The current backend permits chula.ac.th
+and its subdomains; it does not require a numeric student ID.
+Passwords require at least 10 characters and must not be entirely numeric,
+common, or too similar to user information. Django is authoritative for validation.
+The frontend checks basic rules and displays backend field errors.
 
-| Field      | Type   | Required | Rule                                                                                |
-| ---------- | ------ | -------- | ----------------------------------------------------------------------------------- |
-| `name`     | string | Yes      | Must not be empty                                                                   |
-| `email`    | string | Yes      | Exactly 10 digits followed by `@student.chula.ac.th`                                |
-| `password` | string | Yes      | Minimum 8 characters, at least 1 uppercase letter, 1 lowercase letter, and 1 number |
+A successful 201 response is the user object directly:
+`id`, `email`, `first_name`, `last_name`, `department`,
+`is_admin`, `is_provider`, `is_borrower`, `account_status`, `date_joined`.
+IDs are UUID strings. Self-registration creates a borrower without provider/admin
+capabilities. Registration does not log the user in.
 
----
-
-## Successful Response
-
-### `201 Created`
-
+Validation errors, including duplicate email, return HTTP 400:
 ```json
 {
-  "message": "Registration successful",
-  "user": {
-    "id": "1",
-    "name": "Putter",
-    "email": "6731234521@student.chula.ac.th",
-    "role": "BORROWER"
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "An account with this email already exists.",
+    "details": { "email": ["An account with this email already exists."] }
   }
 }
 ```
 
----
+## Local connection
 
-## Validation Error
-
-### `400 Bad Request`
-
-```json
-{
-  "code": "VALIDATION_ERROR",
-  "message": "Invalid registration data."
-}
-```
-
-Examples:
-
-* Missing name
-* Invalid student email
-* Weak password
-
----
-
-## Duplicate Email
-
-### `409 Conflict`
-
-```json
-{
-  "code": "EMAIL_ALREADY_EXISTS",
-  "message": "An account with this email already exists."
-}
-```
-
----
-
-## Server Error
-
-### `500 Internal Server Error`
-
-```json
-{
-  "code": "INTERNAL_SERVER_ERROR",
-  "message": "Something went wrong."
-}
-```
-
-The backend should not expose internal stack traces or sensitive implementation details.
-
----
-
-# Registration Business Rules
-
-## University Email
-
-Valid format:
-
-```text
-XXXXXXXXXX@student.chula.ac.th
-```
-
-Where `XXXXXXXXXX` is exactly 10 numeric digits.
-
-Example:
-
-```text
-6731234521@student.chula.ac.th
-```
-
-Frontend validation pattern:
-
-```regex
-^\d{10}@student\.chula\.ac\.th$
-```
-
-The backend must independently validate this rule.
-
----
-
-## Password
-
-Password must:
-
-* Have at least 8 characters
-* Contain at least one lowercase letter
-* Contain at least one uppercase letter
-* Contain at least one number
-
-The backend must independently validate this rule.
-
-Passwords must never be stored as plain text.
-
----
-
-# Frontend Integration
-
-Frontend environment configuration:
-
+Copy frontend/.env.example to frontend/.env if local overrides are needed:
 ```env
-VITE_API_BASE_URL=http://localhost:3000/api
-VITE_USE_MOCK_API=true
-```
-
-During frontend development:
-
-```env
-VITE_USE_MOCK_API=true
-```
-
-When the real backend becomes available:
-
-```env
+VITE_API_BASE_URL=/api
 VITE_USE_MOCK_API=false
 ```
 
-The frontend will then send requests to:
+Start the backend with Docker Compose in the backend repository, then run
+`npm ci` and `npm run dev` in this repository's frontend directory.
+The existing Vite proxy forwards /api to http://localhost:8000.
+Django must trust http://localhost:5173 for CSRF-protected requests.
+Requests include cookies and an existing csrftoken cookie as X-CSRFToken.
+Login/session UI is not implemented yet.
 
-```text
-POST {VITE_API_BASE_URL}/auth/register
-```
-
-Example:
-
-```text
-POST http://localhost:3000/api/auth/register
-```
-
----
-
-# Standard API Error Format
-
-UniWare APIs should use the following error structure:
-
-```json
-{
-  "code": "ERROR_CODE",
-  "message": "Human-readable error message"
-}
-```
-
-Frontend code should use `message` for user-facing feedback.
-
-`code` can be used when the frontend needs different behavior for specific errors.
+Explicitly set VITE_USE_MOCK_API=true for a UI-only demonstration.
+Mock mode neither persists accounts nor runs Django's password validators.
+Restart Vite after environment changes. Keep actual .env files out of Git.

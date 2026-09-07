@@ -1,253 +1,94 @@
 .register-page {
-  min-height: 100vh;
+  min-height: 100svh;
+  display: grid;
+  grid-template-columns: 59% 41%;
+}
+.register-intro {
+  padding: clamp(28px, 4vw, 72px);
+  display: flex;
+  flex-direction: column;
+  background: var(--color-background);
+}
+.uniware-logo { width: clamp(150px, 17vw, 250px); height: 90px; object-fit: contain; object-position: left; }
+.intro-statement {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .08em;
+  margin: 42px 0 56px;
+  font-size: clamp(48px, 6.6vw, 112px);
+  line-height: 1.08;
+  letter-spacing: -.01em;
+}
+.intro-statement > span { display: block; }
+.intro-statement > span:nth-child(2),
+.intro-statement > span:nth-child(4) { color: var(--color-primary); }
+.intro-statement .intro-ending {
+  max-width: 18ch;
+  margin-top: .32em;
+  font-size: .52em;
+  line-height: 1.22;
+  letter-spacing: -.035em;
+}
+.register-panel {
   display: flex;
   align-items: center;
   justify-content: center;
-
-  padding: 32px 20px;
-
-  background:
-    radial-gradient(
-      circle at top left,
-      #fce7f3 0,
-      transparent 35%
-    ),
-    linear-gradient(
-      135deg,
-      #f8fafc,
-      #f1f5f9
-    );
+  padding: 56px clamp(24px, 3.4vw, 64px);
+  background: var(--color-surface);
 }
-
-.register-card {
-  width: 100%;
-  max-width: 460px;
-
-  padding: 40px;
-
-  background: rgba(255, 255, 255, 0.96);
-
-  border: 1px solid #e5e7eb;
-  border-radius: 20px;
-
-  box-shadow:
-    0 20px 50px rgba(15, 23, 42, 0.08);
-}
-
-.register-header {
-  margin-bottom: 30px;
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-
-  margin-bottom: 28px;
-}
-
-.brand-mark {
-  width: 36px;
-  height: 36px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  border-radius: 10px;
-
-  background: #e11d74;
-  color: white;
-
-  font-size: 18px;
-  font-weight: 700;
-}
-
-.brand-name {
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
-
-.register-header h1 {
-  margin: 0;
-
-  font-size: 30px;
-  line-height: 1.2;
-
-  color: #111827;
-}
-
-.register-subtitle {
-  margin: 10px 0 0;
-
-  color: #6b7280;
-  line-height: 1.6;
-}
-
-
-/* Form */
-
-.register-form {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.form-field {
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-}
-
-.form-field label {
-  color: #374151;
-
-  font-size: 14px;
-  font-weight: 600;
-}
-
+.register-card { width: 100%; max-width: 500px; }
+.register-header { margin-bottom: 30px; }
+.register-header h1 { margin: 0; font-size: 32px; font-weight: var(--font-weight); letter-spacing: -.035em; }
+.register-subtitle { margin: 12px 0 0; color: var(--color-muted); font-size: 14px; line-height: 1.5; }
+.register-form { display: flex; flex-direction: column; gap: 18px; }
+.form-field { display: flex; flex-direction: column; gap: 8px; }
+.form-field label { color: var(--color-text); font-size: 14px; }
 .form-field input {
   width: 100%;
-
-  padding: 12px 14px;
-
-  background: white;
-
-  border: 1px solid #d1d5db;
-  border-radius: 9px;
-
-  color: #111827;
-
-  outline: none;
-
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
+  min-height: 52px;
+  padding: 12px 16px;
+  border: 1px solid var(--color-line);
+  border-radius: 16px;
+  background: transparent;
+  color: var(--color-text);
 }
-
-.form-field input::placeholder {
-  color: #9ca3af;
+.form-field input:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
 }
-
-.form-field input:focus {
-  border-color: #e11d74;
-
-  box-shadow:
-    0 0 0 3px rgba(225, 29, 116, 0.1);
-}
-
-
-/* Help + Error */
-
-.form-help {
-  margin: 0;
-
-  color: #6b7280;
-
-  font-size: 12px;
-  line-height: 1.5;
-}
-
-.form-error {
-  margin: 0;
-
-  color: #dc2626;
-
-  font-size: 13px;
-}
-
-
-/* API Messages */
-
-.form-message {
-  padding: 11px 13px;
-
-  border-radius: 8px;
-
-  font-size: 14px;
-}
-
-.form-message-error {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-
-  color: #b91c1c;
-}
-
-.form-message-success {
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
-
-  color: #166534;
-}
-
-
-/* Submit */
-
+.form-field input[aria-invalid="true"] { border-color: var(--color-error); }
+.form-help { margin: 2px 0 0; color: var(--color-muted); font-size: 12px; line-height: 1.5; }
+.form-error { margin: 0; color: var(--color-error); font-size: 13px; line-height: 1.4; }
+.form-message { padding: 12px 16px; border: 1px solid currentColor; border-radius: 16px; font-size: 14px; line-height: 1.5; }
+.form-message-error { color: var(--color-error); }
+.form-message-success { color: var(--color-success); }
 .register-button {
-  width: 100%;
-
-  padding: 13px 16px;
-
-  border: none;
-  border-radius: 9px;
-
-  background: #e11d74;
-  color: white;
-
-  font-weight: 600;
-
-  cursor: pointer;
-
-  transition:
-    background 0.2s ease,
-    transform 0.1s ease;
-}
-
-.register-button:hover:not(:disabled) {
-  background: #be185d;
-}
-
-.register-button:active:not(:disabled) {
-  transform: translateY(1px);
-}
-
-.register-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-
-/* Footer */
-
-.register-footer {
-  margin: 26px 0 0;
-
-  text-align: center;
-
-  color: #6b7280;
-
-  font-size: 14px;
-}
-
-.login-placeholder {
-  color: #e11d74;
-  font-weight: 600;
-
+  min-height: 50px;
+  margin-top: 8px;
+  padding: 12px 20px;
+  border: 1px solid var(--color-primary);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-primary);
   cursor: pointer;
 }
-
-
-/* Mobile */
-
-@media (max-width: 520px) {
-  .register-card {
-    padding: 28px 22px;
-    border-radius: 16px;
-  }
-
-  .register-header h1 {
-    font-size: 26px;
-  }
+.register-button:hover:not(:disabled) { outline: 1px solid var(--color-primary); }
+.register-button:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 4px; }
+.register-button:disabled, .form-field input:disabled { opacity: .6; cursor: wait; }
+.register-footer { display: flex; justify-content: center; margin-top: 32px; }
+.chula-logo { width: 140px; height: auto; }
+@media (min-width: 1600px) {
+  .register-panel { padding-top: 80px; padding-bottom: 80px; }
+  .register-form { gap: 22px; }
+}
+@media (max-width: 800px) {
+  .register-page { grid-template-columns: 1fr; }
+  .register-intro { border-right: 0; border-bottom: 1px solid var(--color-line); padding: 24px; }
+  .uniware-logo { width: 170px; height: 68px; }
+  .intro-statement { margin: 24px 0 16px; font-size: clamp(44px, 10vw, 76px); }
+  .intro-statement .intro-ending { max-width: 23ch; font-size: .48em; }
+  .register-panel { padding: 40px 24px; }
 }

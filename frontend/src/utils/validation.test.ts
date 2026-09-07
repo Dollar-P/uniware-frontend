@@ -1,65 +1,26 @@
 import { describe, expect, it } from 'vitest';
-
 import { validateRegistration } from './validation';
-
-describe('validateRegistration', () => {
-  it('accepts valid registration data', () => {
-    const errors = validateRegistration({
-      name: 'Putter',
-      email: '6731234521@student.chula.ac.th',
-      password: 'Uniware123',
-    });
-
-    expect(errors).toEqual({});
+const valid = { first_name: 'Putter', last_name: 'Smith', email: 'putter@chula.ac.th', password: 'unusual phrase here' };
+describe('registration validation', () => {
+  it.each(['putter@chula.ac.th', 'abc@student.chula.ac.th', ' USER@ENG.CHULA.AC.TH '])('accepts approved email %s', email => {
+    expect(validateRegistration({ ...valid, email })).toEqual({});
   });
-
-  it('rejects missing name', () => {
-    const errors = validateRegistration({
-      name: '',
-      email: '6731234521@student.chula.ac.th',
-      password: 'Uniware123',
-    });
-
-    expect(errors.name).toBe('Name is required');
+  it.each(['user@gmail.com', 'user@evilchula.ac.th', 'user@chula.ac.th.evil.com', 'a@@chula.ac.th'])('rejects email %s', email => {
+    expect(validateRegistration({ ...valid, email }).email).toBeDefined();
   });
-
-  it('rejects non-Chula student email', () => {
-    const errors = validateRegistration({
-      name: 'Putter',
-      email: 'putter@gmail.com',
-      password: 'Uniware123',
-    });
-
-    expect(errors.email).toBeDefined();
+  it('requires both names and rejects forbidden characters', () => {
+    expect(validateRegistration({ ...valid, first_name: '', last_name: 'Smith1' })).toHaveProperty('first_name');
+    expect(validateRegistration({ ...valid, last_name: 'Smith1' })).toHaveProperty('last_name');
   });
-
-  it('rejects student email without exactly 10 digits', () => {
-    const errors = validateRegistration({
-      name: 'Putter',
-      email: '123456789@student.chula.ac.th',
-      password: 'Uniware123',
-    });
-
-    expect(errors.email).toBeDefined();
+  it.each(['short', '1234567890'])('rejects invalid password %s', password => {
+    expect(validateRegistration({ ...valid, password }).password).toBeDefined();
   });
-
-  it('rejects weak password', () => {
-    const errors = validateRegistration({
-      name: 'Putter',
-      email: '6731234521@student.chula.ac.th',
-      password: 'password',
-    });
-
-    expect(errors.password).toBeDefined();
+  it('allows names with apostrophes and hyphens', () => {
+    expect(validateRegistration({ ...valid, last_name: "O'Brien-Smith" })).toEqual({});
   });
-
-  it('rejects empty password', () => {
-    const errors = validateRegistration({
-      name: 'Putter',
-      email: '6731234521@student.chula.ac.th',
-      password: '',
-    });
-
-    expect(errors.password).toBe('Password is required');
+  it('enforces name and department lengths', () => {
+    const errors = validateRegistration({ ...valid, first_name: 'a'.repeat(151), department: 'a'.repeat(256) });
+    expect(errors.first_name).toBeDefined();
+    expect(errors.department).toBeDefined();
   });
 });

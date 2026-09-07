@@ -1,6 +1,25 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { currentUser, login } from './sessionApi';
+import { currentUser, login, logout } from './sessionApi';
 describe('session API', () => {
+  it('logs out with the current CSRF token and accepts an empty response', async () => {
+    document.cookie = 'csrftoken=logout-token';
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+    vi.stubGlobal('fetch', fetchMock);
+    await expect(logout()).resolves.toBeUndefined();
+    expect(fetchMock).toHaveBeenCalledWith('/api/auth/logout', {
+      method: 'POST', credentials: 'include', headers: { 'X-CSRFToken': 'logout-token' },
+    });
+  });
+  it('accepts an already expired session during logout', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(null, { status: 401 })));
+    await expect(logout()).resolves.toBeUndefined();
+  });
+  it('does not report logout success on CSRF or server failure', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      error: { message: 'CSRF verification failed.' },
+    }), { status: 403 })));
+    await expect(logout()).rejects.toThrow('CSRF verification failed.');
+  });
   afterEach(() => { vi.unstubAllGlobals(); document.cookie = 'csrftoken=; Max-Age=0'; });
   it('posts normalized email and unchanged password with cookies', async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ id: 'uuid' })));

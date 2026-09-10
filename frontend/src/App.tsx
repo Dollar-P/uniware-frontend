@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import RegisterPage from './pages/RegisterPage';
+import CatalogPage from './pages/CatalogPage';
 import { currentUser, logout } from './services/sessionApi';
 import type { RegisterResponse } from './types/auth';
 import uniwareLogo from './assets/brand/uniware-logo.svg';
 
-function readRoute(): 'signup' | 'login' | 'account' {
-  return window.location.hash === '#login' ? 'login' : window.location.hash === '#account' ? 'account' : 'signup';
+function readRoute(): 'signup' | 'login' | 'account' | 'catalog' {
+  return window.location.hash === '#login' ? 'login' : window.location.hash === '#account' ? 'account' : window.location.hash === '#catalog' ? 'catalog' : 'signup';
 }
 function App() {
   const [route, setRoute] = useState(readRoute);
@@ -53,8 +54,8 @@ function App() {
         const account = await currentUser();
         if (!active || version !== sessionVersion.current) return;
         setUser(account);
-        if (account && route !== 'account') window.location.hash = 'account';
-        if (!account && route === 'account') window.location.hash = 'login';
+        if (account && route !== 'account' && route !== 'catalog') window.location.hash = 'account';
+        if (!account && (route === 'account' || route === 'catalog')) window.location.hash = 'login';
       } catch {
         if (active && version === sessionVersion.current) {
           setUser(null);
@@ -69,8 +70,11 @@ function App() {
     return () => { active = false; window.removeEventListener('focus', check); };
   }, [route, attempt]);
   useEffect(() => {
-    document.title = `${route === 'login' ? 'Sign in' : route === 'account' ? 'Your account' : 'Sign up'} · UniWare`;
+    document.title = `${route === 'login' ? 'Sign in' : route === 'account' ? 'Your account' : route === 'catalog' ? 'Equipment catalog' : 'Sign up'} · UniWare`;
   }, [route]);
+  if (!checking && route === 'catalog' && user) {
+    return <CatalogPage userName={user.first_name} onLogout={handleLogout} />;
+  }
   if (checking || route === 'account') {
     return (
       <main className="account-page">
@@ -97,13 +101,14 @@ function App() {
               <button className="register-button logout-button" onClick={handleLogout} disabled={loggingOut}>
                 {loggingOut ? 'Logging out...' : 'Log out'}
               </button>
+              <a className="register-button catalog-button" href="#catalog">Browse equipment</a>
             </>
           ) : <p role="status">Opening sign in...</p>}
         </section>
       </main>
     );
   }
-  return <RegisterPage key={route} mode={route} onLogin={account => {
+  return <RegisterPage key={route} mode={route === 'login' ? 'login' : 'signup'} onLogin={account => {
     setUser(account);
     window.location.hash = 'account';
   }} />;

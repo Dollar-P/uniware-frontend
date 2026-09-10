@@ -11,8 +11,6 @@ export default function EquipmentDetailPage({ equipmentId }: { equipmentId: stri
 
   useEffect(() => {
     let active = true;
-    setLoading(true);
-    setError('');
     void getEquipment(equipmentId)
       .then(result => {
         if (active) setEquipment(result);

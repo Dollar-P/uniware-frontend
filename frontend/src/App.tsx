@@ -3,9 +3,19 @@ import RegisterPage from './pages/RegisterPage';
 import { currentUser, logout } from './services/sessionApi';
 import type { RegisterResponse } from './types/auth';
 import uniwareLogo from './assets/brand/uniware-logo.svg';
+import EquipmentDetailPage from './pages/EquipmentDetailPage';
 
-function readRoute(): 'signup' | 'login' | 'account' {
-  return window.location.hash === '#login' ? 'login' : window.location.hash === '#account' ? 'account' : 'signup';
+type Route = { name: 'signup' | 'login' | 'account'; equipmentId?: never } | {
+  name: 'equipment';
+  equipmentId: string;
+};
+
+function readRoute(): Route {
+  const equipmentMatch = window.location.hash.match(/^#equipment\/([^/]+)$/);
+  if (equipmentMatch) return { name: 'equipment', equipmentId: decodeURIComponent(equipmentMatch[1]) };
+  return {
+    name: window.location.hash === '#login' ? 'login' : window.location.hash === '#account' ? 'account' : 'signup',
+  };
 }
 function App() {
   const [route, setRoute] = useState(readRoute);
@@ -29,7 +39,7 @@ function App() {
       setUser(null);
       setError('');
       window.history.replaceState(null, '', '#login');
-      setRoute('login');
+      setRoute({ name: 'login' });
     } catch (cause) {
       setLogoutError(cause instanceof Error ? cause.message : 'Unable to log out. Please try again.');
     } finally {
@@ -53,8 +63,8 @@ function App() {
         const account = await currentUser();
         if (!active || version !== sessionVersion.current) return;
         setUser(account);
-        if (account && route !== 'account') window.location.hash = 'account';
-        if (!account && route === 'account') window.location.hash = 'login';
+        if (account && route.name !== 'account' && route.name !== 'equipment') window.location.hash = 'account';
+        if (!account && (route.name === 'account' || route.name === 'equipment')) window.location.hash = 'login';
       } catch {
         if (active && version === sessionVersion.current) {
           setUser(null);
@@ -69,9 +79,12 @@ function App() {
     return () => { active = false; window.removeEventListener('focus', check); };
   }, [route, attempt]);
   useEffect(() => {
-    document.title = `${route === 'login' ? 'Sign in' : route === 'account' ? 'Your account' : 'Sign up'} · UniWare`;
+    document.title = `${route.name === 'login' ? 'Sign in' : route.name === 'account' ? 'Your account' : route.name === 'equipment' ? 'Equipment details' : 'Sign up'} · UniWare`;
   }, [route]);
-  if (checking || route === 'account') {
+  if (checking || route.name === 'account' || route.name === 'equipment') {
+    if (!checking && route.name === 'equipment' && user) {
+      return <EquipmentDetailPage equipmentId={route.equipmentId} />;
+    }
     return (
       <main className="account-page">
         <img className="uniware-logo" src={uniwareLogo} alt="UniWare" />
@@ -103,7 +116,7 @@ function App() {
       </main>
     );
   }
-  return <RegisterPage key={route} mode={route} onLogin={account => {
+  return <RegisterPage key={route.name} mode={route.name} onLogin={account => {
     setUser(account);
     window.location.hash = 'account';
   }} />;

@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import RegisterPage from './pages/RegisterPage';
+import MyEquipmentPage from './pages/MyEquipmentPage';
 import { currentUser, logout } from './services/sessionApi';
 import type { RegisterResponse } from './types/auth';
 import uniwareLogo from './assets/brand/uniware-logo.svg';
 
-function readRoute(): 'signup' | 'login' | 'account' {
+function readRoute(): 'signup' | 'login' | 'account' | 'my-equipment' {
+  if (window.location.hash === '#my-equipment') return 'my-equipment';
   return window.location.hash === '#login' ? 'login' : window.location.hash === '#account' ? 'account' : 'signup';
 }
 function App() {
@@ -53,8 +55,11 @@ function App() {
         const account = await currentUser();
         if (!active || version !== sessionVersion.current) return;
         setUser(account);
-        if (account && route !== 'account') window.location.hash = 'account';
-        if (!account && route === 'account') window.location.hash = 'login';
+        // 'my-equipment' is an authenticated route like 'account': a signed-in user
+        // stays put, and a signed-out one is sent to login.
+        const authenticatedRoute = route === 'account' || route === 'my-equipment';
+        if (account && !authenticatedRoute) window.location.hash = 'account';
+        if (!account && authenticatedRoute) window.location.hash = 'login';
       } catch {
         if (active && version === sessionVersion.current) {
           setUser(null);
@@ -71,7 +76,12 @@ function App() {
   useEffect(() => {
     document.title = `${route === 'login' ? 'Sign in' : route === 'account' ? 'Your account' : 'Sign up'} · UniWare`;
   }, [route]);
-  if (checking || route === 'account') {
+  // EPIC2: the provider surfaces need a signed-in user, so they render only once the
+  // session check has resolved.
+  if (route === 'my-equipment' && !checking && user) {
+    return <MyEquipmentPage user={user} />;
+  }
+  if (checking || route === 'account' || route === 'my-equipment') {
     return (
       <main className="account-page">
         <img className="uniware-logo" src={uniwareLogo} alt="UniWare" />
@@ -93,6 +103,9 @@ function App() {
                   user.is_borrower && 'Borrower', user.is_provider && 'Provider', user.is_admin && 'Admin',
                 ].filter(Boolean).join(', ') || 'No equipment permissions assigned'}</dd></div>
               </dl>
+              {user.is_provider && (
+                <a className="register-button account-action-link" href="#my-equipment">Manage my equipment</a>
+              )}
               {logoutError && <p className="form-message form-message-error" role="alert">{logoutError}</p>}
               <button className="register-button logout-button" onClick={handleLogout} disabled={loggingOut}>
                 {loggingOut ? 'Logging out...' : 'Log out'}
@@ -103,7 +116,7 @@ function App() {
       </main>
     );
   }
-  return <RegisterPage key={route} mode={route} onLogin={account => {
+  return <RegisterPage key={route} mode={route === 'login' ? 'login' : 'signup'} onLogin={account => {
     setUser(account);
     window.location.hash = 'account';
   }} />;

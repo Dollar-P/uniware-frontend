@@ -1,83 +1,43 @@
-# US3-4: Equipment Detail
+# Equipment catalog and details (US3-1 / US3-4)
 
-This guide explains how to open the Equipment Detail page during local development.
+Start Django and PostgreSQL with `docker compose up --build` in the backend
+repository. In this repository's `frontend/` directory, run `npm ci` and
+`npm run dev`. Open http://localhost:5173 and sign in with a real account.
+Use `VITE_API_BASE_URL=/api`; Django must trust the frontend origin for
+CSRF-protected actions such as logout.
 
-## Prerequisites
+## Navigation
 
-Start the backend:
+- Account → Browse equipment → catalog card → equipment detail.
+- `#catalog` displays the paginated authenticated catalog.
+- `#equipment/<UUID>` supports direct links and refresh. Use the equipment
+  UUID, not its display Asset ID.
+- Detail → Back to catalog; the UniWare logo links to the account page.
+- Providers retain `#my-equipment`, including add/edit and inventory pagination.
 
-```powershell
-cd C:\Coxx\seProject\uniware-backend
-docker compose up
-```
+The catalog displays readable status labels, categories and locations. Its
+count comes from the API's total, with Previous/Next controls for page access.
+The backend excludes archived and disabled items from the catalog and detail
+endpoints. Visible items may be reserved, checked out or under maintenance;
+visibility does not mean immediate availability.
 
-Start the frontend in a second terminal:
+Detail pages fetch fresh data from `GET /api/equipment/{id}`. Missing and
+hidden items show Equipment not found. Loading and API failures have explicit
+states, with retry for failures. Session expiration redirects to sign in.
+Requests ignore outdated responses after navigation.
 
-```powershell
-cd C:\Coxx\seProject\uniware-frontend\frontend
-npm run dev
-```
+## Integration decisions
 
-The application is available at `http://localhost:5173`.
+Both feature branches are merged into main with their histories preserved.
+The shared equipment types, error class and API client retain all provider
+operations. Catalog cards use the dedicated detail route instead of a second
+detail modal. Request-to-borrow functionality is outside Sprint 1 and has no
+inactive action in these pages. Catalog styles use scoped class names and the
+existing theme variables; status labels and outlined badges are shared.
 
-## 1. Log in
+## Checks
 
-Open:
-
-```text
-http://localhost:5173/#login
-```
-
-For seeded demo data, use:
-
-```text
-Email: borrower1@chula.ac.th
-Password: Str0ngPassw0rd!
-```
-
-Login is required or you will get status 403
-
-## 2. Find an equipment ID
-
-Open the equipment API:
-
-```text
-http://localhost:8000/api/equipment
-```
-
-The equipment list is paginated. Find an item inside the `results` array:
-
-```json
-{
-  "id": "68d7569a-8112-479a-85b8-a84746f50f82",
-  "asset_id": "UNIWARE-0021",
-  "name": "LiPo Battery Charger iCharger 4010"
-}
-```
-
-Use the UUID from `id`. Do not use `asset_id`; values such as `UNIWARE-0001`
-are display identifiers and are not accepted by the detail endpoint.
-
-
-## 3. Open the detail page
-
-Append the UUID to the frontend hash route:
-
-```text
-http://localhost:5173/#equipment/68d7569a-8112-479a-85b8-a84746f50f82
-```
-
-The frontend calls:
-
-```http
-GET /api/equipment/{id}
-```
-
-The page displays the equipment asset ID, name, status, model, category, location,
-and description.
-
-## EXTRA
-you can view full raw JSON from API endpoint.
-```text
-http://localhost:8000/api/equipment/68d7569a-8112-479a-85b8-a84746f50f82
-```
+Run `npm run test:run`, `npm run lint`, and `npm run build` in frontend/.
+Tests cover pagination, empty/error/retry states, navigation, hidden/missing
+details, malformed routes, stale responses, and authentication guards, together
+with the existing account and provider workflows.

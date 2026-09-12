@@ -1,10 +1,22 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createEquipment, getEquipment, listCategories, listMyEquipment, updateEquipment } from './equipmentApi';
+import { createEquipment, getEquipment, listCategories, listEquipment, listMyEquipment, updateEquipment } from './equipmentApi';
 import { EquipmentError } from '../types/equipment';
 
 const page = { count: 0, next: null, previous: null, results: [] };
 
 describe('equipment API', () => {
+  it('requests catalog pages with session cookies', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(page)));
+    vi.stubGlobal('fetch', fetchMock);
+    await listEquipment(2);
+    expect(fetchMock).toHaveBeenCalledWith('/api/equipment?page=2', { credentials: 'include', cache: 'no-store' });
+  });
+  it('encodes a detail ID as one URL segment', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ id: 'a/b' })));
+    vi.stubGlobal('fetch', fetchMock);
+    await getEquipment('a/b');
+    expect(fetchMock).toHaveBeenCalledWith('/api/equipment/a%2Fb', { credentials: 'include', cache: 'no-store' });
+  });
   afterEach(() => { vi.unstubAllGlobals(); document.cookie = 'csrftoken=; Max-Age=0'; });
 
   it('US2-2: requests only the provider inventory endpoint', async () => {

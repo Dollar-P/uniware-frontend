@@ -173,6 +173,7 @@ function Header() {
     <header className="equipment-page-header">
       <img className="uniware-logo" src={uniwareLogo} alt="UniWare" />
       <a className="equipment-back-link" href="#account">Your account</a>
+      <a className="equipment-back-link" href="#catalog">Browse equipment</a>
     </header>
   );
 }

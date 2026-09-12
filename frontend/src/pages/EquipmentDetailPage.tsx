@@ -14,7 +14,7 @@ export default function EquipmentDetailPage({ equipmentId }: { equipmentId: stri
     <main className="equipment-page">
       <header className="equipment-page-header">
         <a href="#account" aria-label="Your account"><img className="uniware-logo" src={uniwareLogo} alt="UniWare" /></a>
-        <a className="equipment-back-link" href="#account">Back to account</a>
+        <a className="equipment-back-link" href="#catalog">Back to catalog</a>
       </header>
       <section className="equipment-detail-content" aria-live="polite">
         <DetailContent key={`${equipmentId}:${attempt}`} equipmentId={equipmentId} retry={() => setAttempt(value => value + 1)} />

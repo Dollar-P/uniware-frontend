@@ -1,0 +1,31 @@
+.catalog-page { min-height: 100svh; padding: 28px clamp(24px, 6vw, 92px) 72px; background: var(--color-surface); }
+.catalog-header { display: flex; align-items: center; justify-content: space-between; gap: 24px; max-width: 1280px; margin: 0 auto; }
+.catalog-nav { display: flex; align-items: center; gap: 22px; font-size: 14px; flex-wrap: wrap; }
+.catalog-nav a { color: var(--color-primary); text-underline-offset: 4px; }
+.catalog-nav .logout-button { min-width: auto; margin: 0; }
+.catalog-intro { max-width: 1280px; margin: clamp(40px, 7vw, 90px) auto 32px; }
+.catalog-kicker { margin: 0 0 14px; color: var(--color-muted); font-size: 14px; }
+.catalog-intro h1 { margin: 0; font-size: clamp(40px, 6vw, 80px); font-weight: var(--font-weight); line-height: 1.1; letter-spacing: -.04em; }
+.catalog-description { margin: 22px 0 0; color: var(--color-muted); line-height: 1.6; }
+.catalog-count { max-width: 1280px; margin: 0 auto 24px; color: var(--color-muted); }
+.catalog-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; max-width: 1280px; margin: 0 auto 32px; padding: 0; list-style: none; }
+.catalog-card { display: flex; flex-direction: column; height: 100%; border: 1px solid var(--color-line); border-radius: 20px; overflow: hidden; color: var(--color-text); text-decoration: none; }
+.catalog-card:hover { border-color: var(--color-primary); }
+.catalog-card:focus-visible, .catalog-nav a:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 4px; }
+.catalog-card-art { display: grid; place-items: center; min-height: 140px; border-bottom: 1px solid var(--color-line); color: var(--color-primary); font-size: 64px; }
+.catalog-card-body { flex: 1; position: relative; padding: 24px; display: flex; flex-direction: column; align-items: flex-start; }
+.catalog-card-category { color: var(--color-muted); font-size: 13px; margin: 0 0 12px; }
+.catalog-card h2 { font-size: 24px; font-weight: var(--font-weight); margin: 0; overflow-wrap: anywhere; }
+.catalog-card-model { margin: 8px 0 0; color: var(--color-muted); font-size: 14px; overflow-wrap: anywhere; }
+.catalog-card-location { margin: auto 0 20px; padding-top: 24px; color: var(--color-muted); overflow-wrap: anywhere; }
+.catalog-card-arrow { position: absolute; right: 24px; bottom: 24px; color: var(--color-primary); }
+.catalog-state { max-width: 1280px; min-height: 240px; margin: 24px auto; padding: 40px 24px; border-top: 1px solid var(--color-line); text-align: center; color: var(--color-muted); }
+.catalog-state h2 { font-weight: var(--font-weight); color: var(--color-text); }
+@media (max-width: 1000px) { .catalog-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 620px) {
+  .catalog-page { padding: 24px 20px 48px; }
+  .catalog-header { align-items: flex-start; flex-direction: column; gap: 12px; }
+  .catalog-nav { gap: 16px; }
+  .catalog-grid { grid-template-columns: 1fr; }
+  .catalog-card-art { min-height: 110px; }
+}

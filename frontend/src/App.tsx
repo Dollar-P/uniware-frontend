@@ -1,11 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import RegisterPage from './pages/RegisterPage';
+import EquipmentDetailPage from './pages/EquipmentDetailPage';
 import MyEquipmentPage from './pages/MyEquipmentPage';
 import { currentUser, logout } from './services/sessionApi';
 import type { RegisterResponse } from './types/auth';
 import uniwareLogo from './assets/brand/uniware-logo.svg';
 
-function readRoute(): 'signup' | 'login' | 'account' | 'my-equipment' {
+type Route = 'signup' | 'login' | 'account' | 'my-equipment' | `equipment/${string}`;
+function readRoute(): Route {
+  if (window.location.hash.startsWith('#equipment/')) return window.location.hash.slice(1) as Route;
   if (window.location.hash === '#my-equipment') return 'my-equipment';
   return window.location.hash === '#login' ? 'login' : window.location.hash === '#account' ? 'account' : 'signup';
 }
@@ -57,7 +60,7 @@ function App() {
         setUser(account);
         // 'my-equipment' is an authenticated route like 'account': a signed-in user
         // stays put, and a signed-out one is sent to login.
-        const authenticatedRoute = route === 'account' || route === 'my-equipment';
+        const authenticatedRoute = route === 'account' || route === 'my-equipment' || route.startsWith('equipment/');
         if (account && !authenticatedRoute) window.location.hash = 'account';
         if (!account && authenticatedRoute) window.location.hash = 'login';
       } catch {
@@ -74,14 +77,19 @@ function App() {
     return () => { active = false; window.removeEventListener('focus', check); };
   }, [route, attempt]);
   useEffect(() => {
-    document.title = `${route === 'login' ? 'Sign in' : route === 'account' ? 'Your account' : 'Sign up'} · UniWare`;
+    document.title = `${route === 'login' ? 'Sign in' : route === 'account' ? 'Your account' : route === 'my-equipment' ? 'My equipment' : route.startsWith('equipment/') ? 'Equipment details' : 'Sign up'} · UniWare`;
   }, [route]);
   // EPIC2: the provider surfaces need a signed-in user, so they render only once the
   // session check has resolved.
+  if (route.startsWith('equipment/') && !checking && user) {
+    let id = '';
+    try { id = decodeURIComponent(route.slice('equipment/'.length)); } catch { /* Invalid IDs show not found. */ }
+    return <EquipmentDetailPage key={id} equipmentId={id} />;
+  }
   if (route === 'my-equipment' && !checking && user) {
     return <MyEquipmentPage user={user} />;
   }
-  if (checking || route === 'account' || route === 'my-equipment') {
+  if (checking || route === 'account' || route === 'my-equipment' || route.startsWith('equipment/')) {
     return (
       <main className="account-page">
         <img className="uniware-logo" src={uniwareLogo} alt="UniWare" />

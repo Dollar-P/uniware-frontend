@@ -51,7 +51,7 @@ export async function listMyEquipment(page = 1): Promise<Paginated<Equipment>> {
 
 /** US3-4 / US2-3: a single item, used for the detail page and to prefill the edit form. */
 export async function getEquipment(id: string): Promise<Equipment> {
-  const response = await fetch(`${baseUrl}/equipment/${id}`, {
+  const response = await fetch(`${baseUrl}/equipment/${encodeURIComponent(id)}`, {
     credentials: 'include',
     cache: 'no-store',
   });
@@ -71,7 +71,7 @@ export async function createEquipment(data: EquipmentRequest): Promise<Equipment
 
 /** US2-3: providers edit their own equipment. */
 export async function updateEquipment(id: string, data: Partial<EquipmentRequest>): Promise<Equipment> {
-  const response = await fetch(`${baseUrl}/equipment/${id}`, {
+  const response = await fetch(`${baseUrl}/equipment/${encodeURIComponent(id)}`, {
     method: 'PATCH',
     credentials: 'include',
     headers: csrfHeaders(),

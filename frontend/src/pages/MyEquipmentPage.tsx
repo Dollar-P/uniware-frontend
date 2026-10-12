@@ -73,7 +73,7 @@ export default function MyEquipmentPage({ user }: { user: RegisterResponse }) {
   if (denied) {
     return (
       <main className="equipment-page">
-        <Header />
+        <Header isProvider={user.is_provider} />
         <section className="equipment-empty" aria-label="Access denied">
           <h1>Provider access required</h1>
           <p>
@@ -90,7 +90,7 @@ export default function MyEquipmentPage({ user }: { user: RegisterResponse }) {
     const editing = mode.kind === 'edit';
     return (
       <main className="equipment-page">
-        <Header />
+        <Header isProvider={user.is_provider} />
         <section className="equipment-form-panel" aria-labelledby="equipment-form-title">
           <h1 id="equipment-form-title">{editing ? 'Edit equipment' : 'Add equipment'}</h1>
           <EquipmentForm
@@ -105,7 +105,7 @@ export default function MyEquipmentPage({ user }: { user: RegisterResponse }) {
 
   return (
     <main className="equipment-page">
-      <Header />
+      <Header isProvider={user.is_provider} />
       <section className="equipment-list-panel" aria-labelledby="my-equipment-title">
         <header className="equipment-list-header">
           <div>
@@ -168,12 +168,13 @@ export default function MyEquipmentPage({ user }: { user: RegisterResponse }) {
   );
 }
 
-function Header() {
+function Header({ isProvider }: { isProvider: boolean }) {
   return (
     <header className="equipment-page-header">
       <img className="uniware-logo" src={uniwareLogo} alt="UniWare" />
       <a className="equipment-back-link" href="#account">Your account</a>
       <a className="equipment-back-link" href="#catalog">Browse equipment</a>
+      {isProvider && <a className="equipment-back-link" href="#provider-requests">Borrow requests</a>}
     </header>
   );
 }

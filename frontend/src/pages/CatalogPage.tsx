@@ -19,6 +19,7 @@ export default function CatalogPage({ user, onLogout, loggingOut, logoutError }:
         <nav className="catalog-nav" aria-label="Catalog navigation">
           <a href="#account">Account</a>
           {user.is_provider && <a href="#my-equipment">My equipment</a>}
+          {user.is_provider && <a href="#provider-requests">Borrow requests</a>}
           <button className="register-button logout-button" onClick={onLogout} disabled={loggingOut}>
             {loggingOut ? 'Logging out...' : 'Log out'}
           </button>

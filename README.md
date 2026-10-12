@@ -1,963 +1,219 @@
 # UniWare
 
-UniWare คือระบบสำหรับจัดการการค้นหาและยืมอุปกรณ์ภายในมหาวิทยาลัย
+**UniWare** คือเว็บแอปพลิเคชันสำหรับค้นหา จัดการ และขอยืมอุปกรณ์ภายในมหาวิทยาลัย เพื่อให้อุปกรณ์ของภาควิชา ห้องปฏิบัติการ และหน่วยงานต่าง ๆ เข้าถึงได้ง่ายขึ้น
 
-แนวคิดหลักคือ ภายในมหาวิทยาลัยมีอุปกรณ์อยู่ตามภาควิชา ห้อง Lab หรือหน่วยงานต่าง ๆ แต่ผู้ที่ต้องการใช้อุปกรณ์อาจไม่รู้ว่า:
+ระบบมีผู้ใช้งานหลักสองบทบาท (ผู้ใช้หนึ่งคนอาจมีมากกว่าหนึ่งบทบาท):
 
-- มีอุปกรณ์อะไรบ้าง
-- อุปกรณ์อยู่ที่ไหน
-- ใครเป็นผู้ดูแล
-- สามารถยืมได้หรือไม่
+- **Provider** — เพิ่มและจัดการอุปกรณ์ ตลอดจนพิจารณาคำขอยืม
+- **Borrower** — ค้นหาอุปกรณ์ ดูรายละเอียด และส่งคำขอยืม
 
-UniWare จึงทำหน้าที่เป็นตัวกลางระหว่างผู้ใช้หลัก 2 ฝั่ง:
-
-- **Provider** — ผู้ที่ดูแลหรือเป็นเจ้าของอุปกรณ์
-- **Borrower** — ผู้ที่ต้องการค้นหาและยืมอุปกรณ์
-
-Flow หลักของระบบ:
+กระบวนการของผลิตภัณฑ์ที่วางแผนไว้:
 
 ```text
-สมัคร / Login
-      ↓
-Provider เพิ่ม Equipment
-      ↓
-Borrower ค้นหา Equipment
-      ↓
-ส่ง Borrow Request
-      ↓
-Provider Approve / Reject
-      ↓
-Checkout
-      ↓
-Return
+Register / Sign in
+       ↓
+Provider adds equipment → Equipment catalog / detail
+                                    ↓
+                           Borrower submits request
+                                    ↓
+                           Provider approves / rejects
+                                    ↓
+                              Checkout → Return
 ```
 
----
+> แผนภาพแสดง **เป้าหมายของระบบทั้งหมด** ไม่ใช่การยืนยันว่าทุกขั้นเชื่อมต่อ Backend จริงแล้ว ดูสถานะการพัฒนาด้านล่าง
 
-# Sprint 1
+## Development status
 
-## Sprint Goal
+| Feature | Status | Notes |
+|---|---|---|
+| Register / Sign in / Sign out | Implemented in frontend | ใช้ Backend authentication/session จริงเมื่อรันร่วมกับ API |
+| Provider equipment management | Implemented in frontend | เพิ่ม ดู และแก้ไขอุปกรณ์ |
+| Equipment catalog / detail | Implemented in frontend | ค้นหา/ดูรายการและรายละเอียดที่เชื่อม Equipment API |
+| Provider request inbox / detail (US5-1, US5-2) | Frontend ready for mock testing | มี UI, API service และ adapter; รอทดสอบกับ Provider API จริง |
+| Provider approve / reject (US5-3, US5-4) | Frontend ready for mock testing | UI และ Dialog พร้อม; ยังไม่ถือว่าตัดสินใจในฐานข้อมูลจริงได้ |
+| End-to-end borrowing, checkout / return | In development / planned | ต้องตรวจความพร้อมจาก Backend และงานส่วนอื่นของทีม |
 
-> ผู้ใช้สามารถเข้าสู่ระบบ และ Provider สามารถเพิ่มอุปกรณ์ให้ Borrower มองเห็นได้
+**หมายเหตุ:** โหมดจำลองของ Provider Requests ไม่เปลี่ยนสถานะใน Database; ข้อมูลจำลองอยู่ในหน่วยความจำและจะรีเซ็ตเมื่อโหลดหน้าใหม่ การผ่าน Frontend Tests ไม่เท่ากับผ่าน End-to-End Integration
 
-Sprint 1 เน้นสร้าง Foundation ของระบบ:
+## Tech stack
+
+- **Frontend:** React, TypeScript, Vite, CSS
+- **Frontend testing:** Vitest, React Testing Library
+- **Backend (separate repository):** Django, Django REST Framework, PostgreSQL
+- **Communication:** REST API พร้อม Session Cookie/CSRF ตามข้อกำหนดของ Backend
+
+Frontend repository: [uniware-frontend](https://github.com/Dollar-P/uniware-frontend)  
+Backend repository: [uniware-backend](https://github.com/chalkp/uniware-backend)
+
+## Architecture
 
 ```text
-User
-Authentication
-Equipment
-Catalog
+React pages / components
+           ↓
+Frontend services (HTTP + session/CSRF)
+           ↓
+Response adapters / TypeScript types
+           ↓
+Django REST API
+           ↓
+PostgreSQL
 ```
 
-User Stories ที่เลือกใน Sprint 1:
-
-| Story | รายละเอียด |
-|---|---|
-| US1-1 | Register |
-| US1-2 | Login |
-| US1-3 | Logout |
-| US2-1 | Provider adds Equipment |
-| US2-2 | Provider views own Equipment |
-| US2-3 | Provider edits Equipment |
-| US2-5 | Category / Location / Status |
-| US3-1 | Borrower views Equipment list |
-| US3-4 | Equipment detail |
-
----
-
-# Architecture
-
-โครงสร้างระบบหลัก:
+สำหรับ **Provider Requests** มีการสลับแหล่งข้อมูลที่ Service Layer:
 
 ```text
-Frontend
-   │
-   │ HTTP
-   ▼
-Backend API
-   │
-   ▼
-Database
+Provider Requests UI
+         ↓
+providerRequestsApi.ts
+         ├── Mock provider requests (development / tests)
+         └── Real Provider API (after backend integration)
+         ↓
+providerRequestsAdapter.ts → UI-facing types
 ```
 
-ตัวอย่าง Register:
+Component ไม่ควรเรียก `fetch()` กระจายตามหน้าต่าง ๆ; ให้เรียกผ่าน `services/` และใช้ชนิดข้อมูลร่วมจาก `types/`
+
+## Project structure
 
 ```text
-Register UI
-   ↓
-POST /api/auth/register
-   ↓
-Backend Validation
-   ↓
-Hash Password
-   ↓
-User Database
+.
+├── README.md
+├── docs/                         # API contract / feature documentation
+└── frontend/
+    ├── .env.example
+    ├── package.json
+    ├── vite.config.ts
+    ├── vitest.config.ts
+    └── src/
+        ├── pages/                # Screens and page-level tests
+        ├── components/           # Reusable UI components
+        │   ├── auth/
+        │   ├── equipment/
+        │   └── requests/
+        ├── services/             # API clients and response adapters
+        ├── types/                # Shared TypeScript types
+        ├── utils/                # Non-UI helpers and validation
+        ├── test/                 # Test setup and fixtures
+        ├── App.tsx               # Hash routes / session-aware navigation
+        └── main.tsx
 ```
 
-ตัวอย่าง Equipment:
+## Getting started
 
-```text
-Add Equipment UI
-   ↓
-POST /api/equipment
-   ↓
-Authentication / Authorization
-   ↓
-Validation
-   ↓
-Equipment Database
-```
+ต้องมี **Node.js/npm** และ Backend ที่เข้าถึงได้ หากต้องการ Login และใช้ข้อมูลจริง
 
----
+จาก Root ของ Frontend Repository:
 
-# Tech Stack
-
-## Frontend
-
-| Technology | ใช้ทำอะไร |
-|---|---|
-| React | สร้าง UI แบบ Component |
-| TypeScript | เพิ่ม Type Checking ให้ JavaScript |
-| Vite | Development Server และ Build Tool |
-| CSS | Styling สำหรับ Prototype |
-| Vitest | Automated Testing |
-| React Testing Library | ทดสอบ React Component จากมุมมองของ User |
-
-Frontend ใช้:
-
-```text
-React + Vite + TypeScript
-```
-
-### React
-
-React ใช้สร้าง UI จาก Component
-
-ตัวอย่าง:
-
-```tsx
-function RegisterPage() {
-  return <RegisterForm />;
-}
-```
-
-แนวคิดคือ:
-
-```text
-Page
- ↓
-Components
- ↓
-UI Elements
-```
-
-เช่น:
-
-```text
-RegisterPage
-    ↓
-RegisterForm
-    ├── Name
-    ├── Email
-    ├── Password
-    └── Submit Button
-```
-
-### TypeScript
-
-ไฟล์ TypeScript ปกติ:
-
-```text
-.ts
-```
-
-ตัวอย่าง:
-
-```text
-authApi.ts
-validation.ts
-```
-
-ไฟล์ React ที่มี JSX:
-
-```text
-.tsx
-```
-
-ตัวอย่าง:
-
-```text
-RegisterPage.tsx
-RegisterForm.tsx
-```
-
-### Vite
-
-ใช้สำหรับ:
-
-```text
-Development Server
-Hot Reload
-Build Production
-```
-
-รัน Frontend:
-
-```bash
-npm run dev
-```
-
----
-
-# Project Structure
-
-โครงสร้าง Frontend ที่ทีมควรใช้:
-
-```text
-frontend/
-│
-├── src/
-│   │
-│   ├── pages/
-│   │
-│   ├── components/
-│   │
-│   ├── services/
-│   │
-│   ├── types/
-│   │
-│   ├── utils/
-│   │
-│   ├── test/
-│   │
-│   ├── App.tsx
-│   ├── main.tsx
-│   └── index.css
-│
-├── .env.example
-├── package.json
-├── package-lock.json
-└── vitest.config.ts
-```
-
----
-
-# แต่ละ Folder ใช้ทำอะไร
-
-## `pages/`
-
-เก็บหน้าหลักของระบบ
-
-ตัวอย่าง:
-
-```text
-RegisterPage.tsx
-LoginPage.tsx
-EquipmentCatalogPage.tsx
-EquipmentDetailPage.tsx
-```
-
-โดยทั่วไป 1 Page จะสอดคล้องกับ Screen หรือ Route หนึ่งของระบบ
-
----
-
-## `components/`
-
-เก็บ UI Component ที่ใช้ประกอบ Page
-
-ตัวอย่าง:
-
-```text
-components/
-├── auth/
-│   ├── RegisterForm.tsx
-│   └── LoginForm.tsx
-│
-└── equipment/
-    └── EquipmentForm.tsx
-```
-
-ไม่ควรเขียน Feature ทั้งหมดรวมไว้ใน `App.tsx`
-
-ควรเป็น:
-
-```text
-App
- ↓
-Page
- ↓
-Component
-```
-
----
-
-## `services/`
-
-เก็บ Function สำหรับติดต่อ Backend API
-
-ตัวอย่าง:
-
-```text
-services/
-├── authApi.ts
-└── equipmentApi.ts
-```
-
-ตัวอย่าง Flow:
-
-```text
-RegisterForm
-     ↓
-registerUser()
-     ↓
-authApi.ts
-     ↓
-Backend
-```
-
-ไม่ควรเขียน `fetch()` กระจายอยู่ใน Component หลายไฟล์
-
----
-
-## `types/`
-
-เก็บ Type / Interface ของ TypeScript
-
-ตัวอย่าง:
-
-```ts
-interface RegisterRequest {
-  name: string;
-  email: string;
-  password: string;
-}
-```
-
-ช่วยให้ Frontend ใช้รูปแบบข้อมูลเดียวกัน
-
----
-
-## `utils/`
-
-เก็บ Logic ที่ไม่ใช่ UI
-
-ตัวอย่าง:
-
-```text
-validation.ts
-```
-
-เช่น:
-
-```text
-validateRegistration()
-validateEquipment()
-```
-
----
-
-## CSS
-
-`index.css`
-
-ใช้สำหรับ Global Style เช่น:
-
-```text
-font
-box-sizing
-body
-default element style
-```
-
-Style เฉพาะ Page ควรแยกไฟล์
-
-ตัวอย่าง:
-
-```text
-RegisterPage.tsx
-RegisterPage.css
-```
-
-ไม่ควรนำ CSS ของทุก Feature ไปกองรวมกันในไฟล์เดียว
-
----
-
-# วิธีเริ่มใช้งาน Project
-
-## 1. Clone Repository
-
-```bash
-git clone <repository-url>
-```
-
-เข้า Folder:
-
-```bash
-cd <repository-folder>
-```
-
----
-
-## 2. เข้า Frontend
-
-```bash
+```powershell
 cd frontend
-```
-
----
-
-## 3. Install Dependencies
-
-```bash
 npm install
+Copy-Item .env.example .env
+npm run dev
 ```
 
-ไม่ต้องส่ง `node_modules` ให้กัน
+ถ้าติดตั้ง Dependencies แล้วและมี `node_modules` อยู่ สามารถใช้ `npm run dev` ได้ทันทีโดยไม่ต้อง `npm install` ซ้ำ
 
-`npm install` จะอ่าน:
+เปิด <http://localhost:5173> โดย Vite จะ Proxy คำขอ `/api` ไปยัง `http://localhost:8000` ตาม `vite.config.ts` ของโปรเจกต์
 
-```text
-package.json
-package-lock.json
-```
+> ต้องเปิด Backend แยกต่างหากสำหรับ Authentication, Session และ Equipment API แม้จะเปิด Mock Provider Requests อยู่ก็ตาม
 
-แล้วติดตั้ง Dependency ที่ Project ต้องการให้เอง
+### Environment variables
 
-ดังนั้น:
-
-```text
-package.json       ✅ commit
-package-lock.json  ✅ commit
-node_modules       ❌ ห้าม commit
-```
-
----
-
-# Environment Variables
-
-หลัง Clone Project ให้สร้าง:
-
-```text
-frontend/.env
-```
-
-โดยดูตัวอย่างจาก:
-
-```text
-frontend/.env.example
-```
-
-ตัวอย่าง:
+ตั้งค่าที่ `frontend/.env` โดยดูตัวอย่างจาก `frontend/.env.example`:
 
 ```env
-VITE_API_BASE_URL=http://localhost:3000/api
-VITE_USE_MOCK_API=true
-```
-
-ระหว่างที่ Backend ยังไม่พร้อม:
-
-```env
-VITE_USE_MOCK_API=true
-```
-
-เมื่อ Backend พร้อม:
-
-```env
+VITE_API_BASE_URL=/api
 VITE_USE_MOCK_API=false
+VITE_PROVIDER_REQUESTS_MOCK=true
 ```
 
-หลังแก้ `.env` ควร Restart Vite:
+| Variable | Purpose |
+|---|---|
+| `VITE_API_BASE_URL` | Base URL สำหรับ Frontend API calls; ค่า `/api` ใช้ Vite Proxy ในเครื่อง |
+| `VITE_USE_MOCK_API` | Mock flag ของฟีเจอร์เดิม (แยกจาก Provider Requests) |
+| `VITE_PROVIDER_REQUESTS_MOCK` | `true` ใช้ข้อมูลจำลองสำหรับ Provider Requests; `false` เรียก Backend จริง |
 
-```bash
-Ctrl + C
-npm run dev
-```
+เมื่อ Backend ของ Provider Requests พร้อมและมี API Contract ตรงกัน ให้ตั้ง `VITE_PROVIDER_REQUESTS_MOCK=false` แล้ว Restart Vite
 
-> ห้ามเก็บ Password, Database Password, Secret Key หรือข้อมูลลับในตัวแปร `VITE_`
->
-> เพราะ Environment Variable ฝั่ง Frontend สามารถถูกเปิดเผยใน Browser ได้
+**อย่า Commit `frontend/.env`, Password, Secret Key หรือข้อมูลลับ** เพราะค่าที่ขึ้นต้นด้วย `VITE_` สามารถถูกอ่านจาก Browser ได้
 
----
+## Available screens and navigation
 
-# การรัน Frontend
+หลังลงชื่อเข้าใช้:
 
-Development:
+- **Catalog** — ดูอุปกรณ์และเปิดรายละเอียด
+- **My Equipment** — จัดการอุปกรณ์ของ Provider
+- **Borrow Requests** — ดูคำขอยืมที่เข้ามาและตัดสินใจ (เฉพาะ Provider)
+- **Account** — ดูข้อมูลผู้ใช้และออกจากระบบ
 
-```bash
-npm run dev
-```
-
-โดยปกติ Vite จะเปิดที่:
+Frontend ใช้ **Hash Navigation** ใน `App.tsx` ยังไม่ได้ติดตั้ง React Router
 
 ```text
-http://localhost:5173
+#catalog
+#my-equipment
+#provider-requests
+#provider-requests/<request-id>
+#account
 ```
 
----
+ผู้ใช้ที่ไม่มีสิทธิ์ Provider ไม่ควรเข้าถึง Provider Screens; Backend ต้องตรวจสิทธิ์และ Ownership ซ้ำเมื่อเปิดใช้ API จริง
 
-# การ Test
+## Provider Requests integration contract
 
-รัน Test แบบ Watch Mode:
+Frontend ปัจจุบันเรียก Service Functions ดังนี้:
 
-```bash
-npm test
-```
+| Function | Expected HTTP operation | Status |
+|---|---|---|
+| `listProviderRequests()` | `GET /api/provider/requests` | Proposed; confirm with Backend |
+| `getProviderRequest(id)` | `GET /api/provider/requests/{id}` | Proposed; confirm with Backend |
+| `approveProviderRequest(id)` | `POST /api/provider/requests/{id}/approve` | Proposed; confirm with Backend |
+| `rejectProviderRequest(id, reason)` | `POST /api/provider/requests/{id}/reject` | Proposed; confirm with Backend |
 
-รัน Test ครั้งเดียว:
+ก่อนเปิด Real API ต้องยืนยันกับ Backend Owner เรื่อง **Endpoint / trailing slash, Response Fields, Pagination, Reject Body (`reason` หรือ `decision_reason`), Error Shape และ CSRF**
 
-```bash
-npm run test:run
-```
+`providerRequestsAdapter.ts` ใช้แปลงข้อมูลจาก API ให้เป็น Shape กลางของ Frontend; เมื่อ Contract เปลี่ยนควรปรับ Service และ Adapter ก่อนแก้ UI
 
----
+## Tests, lint and build
 
-# Lint
+รันจาก `frontend/`:
 
-ตรวจ Code Quality:
-
-```bash
-npm run lint
-```
-
----
-
-# Build
-
-ตรวจว่า Project สามารถ Build เป็น Production ได้หรือไม่:
-
-```bash
-npm run build
-```
-
----
-
-# ก่อนส่ง Pull Request
-
-Frontend ทุกคนควรรัน:
-
-```bash
+```powershell
 npm run test:run
 npm run lint
 npm run build
 ```
 
-ทั้ง 3 คำสั่งควรผ่านก่อนขอ Merge
+หาก Vitest บน Windows เปิด Worker พร้อมกันไม่สำเร็จ ลอง:
 
----
+```powershell
+npm run test:run -- --maxWorkers=2 --no-file-parallelism
+```
 
-# Git Workflow
+**ก่อน Merge** ให้ตรวจว่า Tests, Lint และ Build ผ่านจริง และลองใช้หน้า UI ใน Browser; สำหรับฟีเจอร์ที่พึ่งพา Backend ต้องมี Integration Tests ก่อนถือว่าเสร็จสมบูรณ์
 
-## ห้ามทำงานตรง `main`
+## Git workflow
 
-ก่อนเริ่ม User Story ใหม่:
+ไม่แก้โค้ดโดยตรงบน `main`; สร้าง Branch แล้วเปิด Pull Request ให้ทีม Review
 
-```bash
+```powershell
 git switch main
-git pull
+git pull --ff-only origin main
+git switch -c feature/<story-or-feature>
+
+# after implementing and testing
+git add <relevant-files>
+git commit -m "feat(usX): describe one meaningful change"
+git push -u origin feature/<story-or-feature>
 ```
 
-จากนั้นสร้าง Branch:
+ใช้ Commit ที่มีขอบเขตชัดเจน เช่น `feat(us5): add provider request pages`, `test(us5): cover request decisions` หรือ `docs: update project README`
 
-```bash
-git switch -c feature/usX-X-name
-```
+ก่อนเปิด PR:
 
-ตัวอย่าง:
+1. ตรวจ Diff และไม่ Commit `.env` หรือ `node_modules`
+2. รัน Tests, Lint, Build
+3. อธิบาย Feature ที่เพิ่ม, หลักฐานการทดสอบ และจุดที่ยังใช้ Mock / รอ Backend
+4. ให้เพื่อน Review และ Merge ผ่าน PR เท่านั้น
 
-```text
-feature/us1-1-register
-feature/us1-2-login
-feature/us1-3-logout
-
-feature/us2-1-add-equipment
-feature/us2-2-my-equipment
-feature/us2-3-edit-equipment
-
-feature/us3-1-catalog
-feature/us3-4-equipment-detail
-```
-
----
-
-# ขั้นตอนการทำงานด้วย Git
-
-```text
-main ล่าสุด
-    ↓
-สร้าง Feature Branch
-    ↓
-เขียน Code
-    ↓
-Commit
-    ↓
-Push
-    ↓
-Pull Request
-    ↓
-Code Review
-    ↓
-Merge เข้า main
-```
-
-ตัวอย่าง:
-
-```bash
-git switch main
-
-git pull
-
-git switch -c feature/us2-1-add-equipment
-```
-
-ทำงานเสร็จบางส่วน:
-
-```bash
-git add .
-git commit -m "feat(us2-1): add equipment form"
-```
-
-Push:
-
-```bash
-git push -u origin feature/us2-1-add-equipment
-```
-
-จากนั้นเปิด Pull Request:
-
-```text
-feature/us2-1-add-equipment
-              ↓
-             main
-```
-
----
-
-# Push ไม่เท่ากับ Merge
-
-สามารถ Push งานที่ยังไม่เสร็จขึ้น GitHub ได้
-
-```text
-Commit
- ↓
-Push
-```
-
-ไม่ได้ทำให้ `main` เปลี่ยน
-
-`main` จะเปลี่ยนก็ต่อเมื่อ:
-
-```text
-Pull Request
- ↓
-Review
- ↓
-Merge
-```
-
-ดังนั้นควร Push งานเป็นระยะเพื่อ:
-
-- Backup งาน
-- ให้เพื่อนดู Progress
-- ให้เพื่อน Review ได้
-- ลดความเสี่ยงงานหาย
-
----
-
-# Commit Message Convention
-
-Feature:
-
-```text
-feat(us1-1): add registration form
-```
-
-Test:
-
-```text
-test(us1-1): add registration tests
-```
-
-Style:
-
-```text
-style(us1-1): add registration prototype styling
-```
-
-Documentation:
-
-```text
-docs: add API contract
-```
-
-Setup / Configuration:
-
-```text
-chore: initialize frontend
-```
-
----
-
-# API Convention
-
-รายละเอียด API กลางอยู่ที่:
-
-```text
-docs/api-contract.md
-```
-
-Frontend และ Backend ต้องตกลง Request / Response Format ให้ตรงกันก่อนทำ Integration
-
-ตัวอย่าง Register:
-
-```http
-POST /api/auth/register
-```
-
-Request:
-
-```json
-{
-  "name": "Putter",
-  "email": "6731234521@student.chula.ac.th",
-  "password": "Uniware123"
-}
-```
-
-ตัวอย่าง Success:
-
-```http
-201 Created
-```
-
-```json
-{
-  "message": "Registration successful",
-  "user": {
-    "id": "1",
-    "name": "Putter",
-    "email": "6731234521@student.chula.ac.th",
-    "role": "BORROWER"
-  }
-}
-```
-
-Error Format กลาง:
-
-```json
-{
-  "code": "ERROR_CODE",
-  "message": "Human-readable error message"
-}
-```
-
-ตัวอย่าง:
-
-```json
-{
-  "code": "EMAIL_ALREADY_EXISTS",
-  "message": "An account with this email already exists."
-}
-```
-
----
-
-# Frontend / Backend Responsibility
-
-Frontend รับผิดชอบ:
-
-```text
-UI
-Form State
-Client-side Validation
-Loading State
-Error / Success Display
-API Request
-```
-
-Backend รับผิดชอบ:
-
-```text
-Server-side Validation
-Authentication
-Authorization
-Database
-Password Hashing
-Business Rules
-```
-
-สำคัญ:
-
-```text
-Frontend Validation
-≠
-Security
-```
-
-Frontend Validation ช่วย User Experience
-
-แต่ Backend ต้อง Validate ซ้ำเสมอ เพราะ Frontend สามารถถูก Bypass ได้
-
----
-
-# Definition of Done
-
-User Story จะถือว่า Done เมื่อ:
-
-- UI ที่เกี่ยวข้องทำงาน
-- API ที่เกี่ยวข้องทำงาน
-- Data Model ที่เกี่ยวข้องพร้อม
-- Valid Acceptance Criteria ผ่าน
-- Invalid Acceptance Criteria ผ่าน
-- Validation ทำงาน
-- Permission / Authorization ทำงานถ้ามี
-- Test ผ่าน
-- Code ถูก Review
-- Merge เข้า `main`
-- ไม่มี Critical Defect ที่ทำให้ Flow หลักใช้ไม่ได้
-
----
-
-# ถ้าจะเริ่มทำ Frontend Story ใหม่
-
-ตัวอย่าง US1-2 Login
-
-## 1. Update main
-
-```bash
-git switch main
-git pull
-```
-
-## 2. สร้าง Branch
-
-```bash
-git switch -c feature/us1-2-login
-```
-
-## 3. ดู Structure เดิมก่อนสร้างไฟล์ใหม่
-
-Authentication มี:
-
-```text
-services/authApi.ts
-types/auth.ts
-components/auth/
-```
-
-ดังนั้น Login ควรต่อยอดของเดิม
-
-ตัวอย่าง:
-
-```text
-pages/
-└── LoginPage.tsx
-
-components/
-└── auth/
-    └── LoginForm.tsx
-
-services/
-└── authApi.ts
-
-types/
-└── auth.ts
-```
-
-อย่าสร้าง Service ซ้ำโดยไม่จำเป็น เช่น:
-
-```text
-loginApi.ts
-userAuthApi.ts
-authenticationApi.ts
-```
-
-ถ้ามี `authApi.ts` อยู่แล้ว ให้เพิ่ม:
-
-```text
-registerUser()
-loginUser()
-logoutUser()
-```
-
-ไว้ด้วยกัน
-
----
-
-# ถ้าจะทำ Equipment
-
-ใช้ Pattern เดียวกัน:
-
-```text
-pages/
-└── AddEquipmentPage.tsx
-
-components/
-└── equipment/
-    └── EquipmentForm.tsx
-
-services/
-└── equipmentApi.ts
-
-types/
-└── equipment.ts
-
-utils/
-└── equipmentValidation.ts
-```
-
-Flow:
-
-```text
-Page
- ↓
-Component
- ↓
-Validation
- ↓
-Service
- ↓
-Backend API
-```
-
----
-
-# กติกากลางของทีม
-
-1. ไม่เขียนงานตรง `main`
-2. ก่อนสร้าง Branch ใหม่ต้อง `git pull` main ล่าสุด
-3. 1 User Story / Feature ต่อ 1 Branch เป็นหลัก
-4. Push งานขึ้น GitHub เป็นระยะ
-5. Merge ผ่าน Pull Request
-6. ให้เพื่อน Review ก่อน Merge
-7. ไม่ Commit `node_modules`
-8. ไม่ Commit `.env`
-9. API Call ให้อยู่ใน `services/`
-10. TypeScript Type กลางให้อยู่ใน `types/`
-11. Validation ที่นำกลับมาใช้ได้ให้อยู่ใน `utils/`
-12. CSS เฉพาะ Page ไม่ควรใส่ใน `index.css`
-13. ก่อน Merge Frontend ต้องผ่าน:
-
-```bash
-npm run test:run
-npm run lint
-npm run build
-```
-
-14. หากจะเปลี่ยน API Contract หรือ Project Structure ที่คนอื่นใช้ร่วมกัน ให้คุยกับทีมก่อน
-
----
-
-# สิ่งที่ควรอ่านก่อนเริ่มทำงาน
-
-สำหรับสมาชิกทีมใหม่หรือคนที่กำลังเริ่ม User Story:
-
-1. อ่าน README นี้
-2. Pull `main` ล่าสุด
-3. ดู Sprint Backlog / User Story ของตัวเอง
-4. ดู Acceptance Criteria
-5. ดู Folder Structure ที่มีอยู่แล้ว
-6. ดู `docs/api-contract.md`
-7. สร้าง Feature Branch
-8. เริ่ม Implementation
-9. Test
-10. เปิด Pull Request
+ดูรายละเอียดเพิ่มเติมใน [`docs/api-contract.md`](docs/api-contract.md) และเอกสารฟีเจอร์ภายใต้ `docs/`

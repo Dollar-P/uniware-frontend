@@ -93,7 +93,7 @@ function App() {
   if (route.startsWith('equipment/') && !checking && user) {
     let id = '';
     try { id = decodeURIComponent(route.slice('equipment/'.length)); } catch { /* Invalid IDs show not found. */ }
-    return <EquipmentDetailPage key={id} equipmentId={id} />;
+    return <EquipmentDetailPage key={id} equipmentId={id} user={user} />;
   }
   if (route === 'my-equipment' && !checking && user) {
     return <MyEquipmentPage user={user} />;

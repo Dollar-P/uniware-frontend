@@ -10,11 +10,10 @@ export async function createBorrowRequest(payload: BorrowRequestPayload): Promis
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (token) headers['X-CSRFToken'] = decodeURIComponent(token.slice('csrftoken='.length));
 
-  const response = await fetch(`${baseUrl}/borrow-requests`, {
+  const response = await fetch(`${baseUrl}/requests/borrow-requests/`, {
     method: 'POST', credentials: 'include', headers,
     body: JSON.stringify({ ...payload, purpose: payload.purpose.trim() }),
   });
-
   if (!response.ok) {
     const data: ApiError | null = await response.json().catch(() => null);
     const fields: BorrowRequestFormErrors = {};

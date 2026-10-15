@@ -1,6 +1,6 @@
 import type { BorrowRequestStatus } from './borrowRequest';
 
-/** Write shape for POST /borrow-requests (apps/borrowing/serializers.py). */
+/** Write shape for POST /api/requests/borrow-requests/ (apps/borrowing/serializers.py). */
 export interface BorrowRequestPayload {
   equipment_id: string;
   pickup_date: string;

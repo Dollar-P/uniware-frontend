@@ -5,15 +5,19 @@ import CatalogPage from './pages/CatalogPage';
 import MyEquipmentPage from './pages/MyEquipmentPage';
 import ProviderRequestsPage from './pages/ProviderRequestsPage';
 import ProviderRequestDetailPage from './pages/ProviderRequestDetailPage';
+import MyRequestsPage from './pages/MyRequestsPage';
+import MyRequestDetailPage from './pages/MyRequestDetailPage';
 import { currentUser, logout } from './services/sessionApi';
 import type { RegisterResponse } from './types/auth';
 import uniwareLogo from './assets/brand/uniware-logo.svg';
 
-type Route = 'signup' | 'login' | 'account' | 'my-equipment' | 'catalog' | 'provider-requests' | `provider-requests/${string}` | `equipment/${string}`;
+type Route = 'signup' | 'login' | 'account' | 'my-equipment' | 'catalog' | 'provider-requests' | 'my-requests' | `provider-requests/${string}` | `my-requests/${string}` | `equipment/${string}`;
 function readRoute(): Route {
   if (window.location.hash === '#catalog') return 'catalog';
   if (window.location.hash === '#provider-requests') return 'provider-requests';
   if (window.location.hash.startsWith('#provider-requests/')) return window.location.hash.slice(1) as Route;
+  if (window.location.hash === '#my-requests') return 'my-requests';
+  if (window.location.hash.startsWith('#my-requests/')) return window.location.hash.slice(1) as Route;
   if (window.location.hash.startsWith('#equipment/')) return window.location.hash.slice(1) as Route;
   if (window.location.hash === '#my-equipment') return 'my-equipment';
   return window.location.hash === '#login' ? 'login' : window.location.hash === '#account' ? 'account' : 'signup';
@@ -66,7 +70,7 @@ function App() {
         setUser(account);
         // 'my-equipment' is an authenticated route like 'account': a signed-in user
         // stays put, and a signed-out one is sent to login.
-        const authenticatedRoute = route === 'account' || route === 'catalog' || route === 'my-equipment' || route === 'provider-requests' || route.startsWith('provider-requests/') || route.startsWith('equipment/');
+        const authenticatedRoute = route === 'account' || route === 'catalog' || route === 'my-equipment' || route === 'provider-requests' || route === 'my-requests' || route.startsWith('provider-requests/') || route.startsWith('my-requests/') || route.startsWith('equipment/');
         if (account && !authenticatedRoute) window.location.hash = 'account';
         if (!account && authenticatedRoute) window.location.hash = 'login';
       } catch {
@@ -83,7 +87,7 @@ function App() {
     return () => { active = false; window.removeEventListener('focus', check); };
   }, [route, attempt]);
   useEffect(() => {
-    document.title = `${route === 'login' ? 'Sign in' : route === 'account' ? 'Your account' : route === 'catalog' ? 'Equipment catalog' : route === 'my-equipment' ? 'My equipment' : route.startsWith('provider-requests/') ? 'Request details' : route === 'provider-requests' ? 'Borrow requests' : route.startsWith('equipment/') ? 'Equipment details' : 'Sign up'} · UniWare`;
+    document.title = `${route === 'login' ? 'Sign in' : route === 'account' ? 'Your account' : route === 'catalog' ? 'Equipment catalog' : route === 'my-equipment' ? 'My equipment' : route.startsWith('provider-requests/') ? 'Request details' : route === 'provider-requests' ? 'Borrow requests' : route.startsWith('my-requests/') ? 'Request details' : route === 'my-requests' ? 'My borrow requests' : route.startsWith('equipment/') ? 'Equipment details' : 'Sign up'} · UniWare`;
   }, [route]);
   // EPIC2: the provider surfaces need a signed-in user, so they render only once the
   // session check has resolved.
@@ -106,7 +110,16 @@ function App() {
     try { id = decodeURIComponent(route.slice('provider-requests/'.length)); } catch { /* Invalid IDs show not found. */ }
     return <ProviderRequestDetailPage key={id} user={user} requestId={id} />;
   }
-  if (checking || route === 'account' || route === 'catalog' || route === 'my-equipment' || route === 'provider-requests' || route.startsWith('provider-requests/') || route.startsWith('equipment/')) {
+  // US4-3: the borrower's own requests, scoped server-side to the signed-in user.
+  if (route === 'my-requests' && !checking && user) {
+    return <MyRequestsPage user={user} />;
+  }
+  if (route.startsWith('my-requests/') && !checking && user) {
+    let id = '';
+    try { id = decodeURIComponent(route.slice('my-requests/'.length)); } catch { /* Invalid IDs show not found. */ }
+    return <MyRequestDetailPage key={id} user={user} requestId={id} />;
+  }
+  if (checking || route === 'account' || route === 'catalog' || route === 'my-equipment' || route === 'provider-requests' || route === 'my-requests' || route.startsWith('provider-requests/') || route.startsWith('my-requests/') || route.startsWith('equipment/')) {
     return (
       <main className="account-page">
         <img className="uniware-logo" src={uniwareLogo} alt="UniWare" />
@@ -129,6 +142,9 @@ function App() {
                 ].filter(Boolean).join(', ') || 'No equipment permissions assigned'}</dd></div>
               </dl>
               <a className="register-button account-action-link" href="#catalog">Browse equipment</a>
+              {user.is_borrower && (
+                <a className="register-button account-action-link" href="#my-requests">My borrow requests</a>
+              )}
               {user.is_provider && (
                 <>
                   <a className="register-button account-action-link" href="#my-equipment">Manage my equipment</a>

@@ -56,3 +56,42 @@ export function dateLabel(isoDate: string): string {
   const date = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
   return new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(date);
 }
+
+/** US4-3: the borrower's own view of a request.
+ *  Mirrors BorrowRequestSerializer in apps/requests/serializers.py, where `borrower`
+ *  and `decided_by` are plain primary keys and `equipment` is expanded. */
+export interface MyBorrowRequest {
+  id: string;
+  borrower: string;
+  equipment: Equipment;
+  pickup_date: string;
+  due_date: string; // Exclusive end date in the backend data model.
+  purpose: string;
+  status: BorrowRequestStatus;
+  decision_reason: string;
+  decided_by: string | null;
+  decided_at: string | null;
+}
+
+export type MyBorrowRequestPage = Paginated<MyBorrowRequest>;
+
+/** What each status means to the borrower, so the list is readable without a legend. */
+export const MY_REQUEST_STATUS_HELP: Record<BorrowRequestStatus, string> = {
+  PENDING: 'Waiting for the provider to decide.',
+  APPROVED: 'Approved. The equipment is reserved for your dates.',
+  REJECTED: 'The provider turned this request down.',
+  CANCELLED: 'This request was withdrawn.',
+  CHECKED_OUT: 'You have the equipment right now.',
+  COMPLETED: 'Returned and closed.',
+};
+
+export class MyRequestError extends Error {
+  readonly status: number;
+  readonly code?: string;
+  constructor(message: string, status: number, code?: string) {
+    super(message);
+    this.name = 'MyRequestError';
+    this.status = status;
+    this.code = code;
+  }
+}

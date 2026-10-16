@@ -1,0 +1,2 @@
+/* US4-3 borrower view. Shared card, badge and grid primitives come from ProviderRequests.css. */
+.my-request-status-help { margin: 0; font-size: 14px; color: var(--color-muted); }

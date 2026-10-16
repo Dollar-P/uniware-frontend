@@ -1,0 +1,10 @@
+.equipment-detail-content { max-width: 960px; margin: 48px auto; }
+.equipment-details-card { padding: clamp(24px, 4vw, 48px); border: 1px solid var(--color-line); border-radius: 24px; }
+.equipment-details-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+.equipment-details-header > div { min-width: 0; }
+.equipment-asset-id { margin: 0 0 10px; color: var(--color-muted); font-size: 14px; overflow-wrap: anywhere; }
+.equipment-details-header h1 { margin: 0; font-weight: var(--font-weight); letter-spacing: -.035em; overflow-wrap: anywhere; }
+.equipment-details-list { margin: 36px 0 0; border-top: 1px solid var(--color-line); }
+.equipment-details-list div { padding: 20px 0; border-bottom: 1px solid var(--color-line); }
+.equipment-details-list dt { color: var(--color-muted); font-size: 14px; }
+.equipment-details-list dd { margin: 8px 0 0; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }

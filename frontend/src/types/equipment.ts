@@ -34,6 +34,12 @@ export interface Equipment {
   updated_at: string;
 }
 
+/** US8-4: the admin moderation view of a listing. The admin endpoints add the reason a
+ *  listing was taken out of the catalog, which the borrower-facing serializer hides. */
+export interface AdminEquipment extends Equipment {
+  disabled_reason: string;
+}
+
 /** Write shape for POST /equipment and PATCH /equipment/:id. */
 export interface EquipmentRequest {
   asset_id: string;

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createEquipment, getEquipment, listCategories, listEquipment, listMyEquipment, updateEquipment } from './equipmentApi';
+import { createEquipment, disableEquipment, enableEquipment, getEquipment, listAdminEquipment, listCategories, listEquipment, listMyEquipment, updateEquipment } from './equipmentApi';
 import { EquipmentError } from '../types/equipment';
 
 const page = { count: 0, next: null, previous: null, results: [] };
@@ -100,6 +100,88 @@ describe('equipment API', () => {
     vi.stubGlobal('fetch', fetchMock);
     await expect(listCategories()).resolves.toEqual([{ id: 'c1', name: 'Robotics' }]);
     expect(fetchMock).toHaveBeenCalledWith('/api/categories', { credentials: 'include' });
+  });
+
+  it('US8-4: reads the admin listing, which keeps disabled records', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(page)));
+    vi.stubGlobal('fetch', fetchMock);
+    await listAdminEquipment(3);
+    expect(fetchMock).toHaveBeenCalledWith('/api/admin/equipment?page=3', {
+      credentials: 'include', cache: 'no-store',
+    });
+  });
+
+  it('US8-4: POSTs the reason to the disable route with the CSRF token', async () => {
+    document.cookie = 'csrftoken=disable-token';
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ id: 'uuid' })));
+    vi.stubGlobal('fetch', fetchMock);
+    await disableEquipment('uuid', 'Photos do not match the asset');
+    expect(fetchMock).toHaveBeenCalledWith('/api/admin/equipment/uuid/disable', expect.objectContaining({
+      method: 'POST',
+      credentials: 'include',
+      body: JSON.stringify({ reason: 'Photos do not match the asset' }),
+    }));
+    const [, init] = fetchMock.mock.calls[0];
+    expect(init.headers['X-CSRFToken']).toBe('disable-token');
+  });
+
+  it('US8-4: never sends a status, so a listing can only be moderated by this route', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ id: 'uuid' })));
+    vi.stubGlobal('fetch', fetchMock);
+    await disableEquipment('uuid', 'Misleading');
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).not.toMatch(/\/api\/equipment\//);
+    expect(init.body).not.toMatch(/status/);
+  });
+
+  it('US8-4: POSTs to the enable route with no body', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ id: 'uuid' })));
+    vi.stubGlobal('fetch', fetchMock);
+    await enableEquipment('uuid');
+    expect(fetchMock).toHaveBeenCalledWith('/api/admin/equipment/uuid/enable', expect.objectContaining({
+      method: 'POST', credentials: 'include',
+    }));
+    expect(fetchMock.mock.calls[0][1].body).toBeUndefined();
+  });
+
+  it('US8-4: keeps the moderation routes free of a trailing slash', async () => {
+    const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(new Response(JSON.stringify({ id: 'uuid' }))));
+    vi.stubGlobal('fetch', fetchMock);
+    await disableEquipment('uuid', 'Misleading');
+    await enableEquipment('uuid');
+    // apps/equipment/urls.py uses DefaultRouter(trailing_slash=False): a slash is a 404.
+    for (const [url] of fetchMock.mock.calls) expect(url).not.toMatch(/\/$/);
+  });
+
+  it('US8-4: encodes the id as one URL segment on both moderation routes', async () => {
+    const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(new Response(JSON.stringify({ id: 'a/b' }))));
+    vi.stubGlobal('fetch', fetchMock);
+    await disableEquipment('a/b', 'Misleading');
+    await enableEquipment('a/b');
+    expect(fetchMock.mock.calls[0][0]).toBe('/api/admin/equipment/a%2Fb/disable');
+    expect(fetchMock.mock.calls[1][0]).toBe('/api/admin/equipment/a%2Fb/enable');
+  });
+
+  it('US8-4: surfaces the conflict message when a listing is already disabled', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      error: {
+        code: 'INVALID_STATE_TRANSITION',
+        message: 'A listing that is disabled is already out of the borrower catalog.',
+      },
+    }), { status: 409 })));
+    await expect(disableEquipment('uuid', 'Misleading')).rejects.toMatchObject({
+      message: 'A listing that is disabled is already out of the borrower catalog.',
+      status: 409,
+    });
+  });
+
+  it('US8-4: surfaces the capability denial when a non-admin calls the route', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      error: { code: 'PERMISSION_DENIED', message: 'This action requires admin capability.' },
+    }), { status: 403 })));
+    await expect(enableEquipment('uuid')).rejects.toMatchObject({
+      message: 'This action requires admin capability.', status: 403,
+    });
   });
 
   it('throws an EquipmentError even when the body is not JSON', async () => {

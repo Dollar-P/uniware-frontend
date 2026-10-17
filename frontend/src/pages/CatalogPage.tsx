@@ -18,6 +18,7 @@ export default function CatalogPage({ user, onLogout, loggingOut, logoutError }:
         <a href="#account" aria-label="Your account"><img className="uniware-logo" src={uniwareLogo} alt="UniWare" /></a>
         <nav className="catalog-nav" aria-label="Catalog navigation">
           <a href="#account">Account</a>
+          {user.is_borrower && <a href="#my-requests">My requests</a>}
           {user.is_provider && <a href="#my-equipment">My equipment</a>}
           {user.is_provider && <a href="#provider-requests">Borrow requests</a>}
           <button className="register-button logout-button" onClick={onLogout} disabled={loggingOut}>

@@ -8,3 +8,14 @@
 .equipment-details-list div { padding: 20px 0; border-bottom: 1px solid var(--color-line); }
 .equipment-details-list dt { color: var(--color-muted); font-size: 14px; }
 .equipment-details-list dd { margin: 8px 0 0; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* US4-1 borrow request. Form controls reuse .register-form/.form-field from RegisterPage.css. */
+.equipment-borrow { display: flex; flex-direction: column; gap: 16px; margin-top: 24px; }
+.equipment-borrow .register-button { align-self: flex-start; padding-inline: 32px; }
+.equipment-borrow-note { margin: 0; color: var(--color-muted); font-size: 14px; }
+.borrow-request-overlay { position: fixed; z-index: 100; inset: 0; background: #0008; display: grid; place-items: center; padding: 16px; overflow-y: auto; }
+.borrow-request-dialog { background: var(--color-surface); width: min(100%, 560px); padding: clamp(20px, 4vw, 32px); border-radius: 24px; box-shadow: 0 24px 60px #0004; }
+.borrow-request-dialog h2 { margin: 0 0 8px; font-weight: var(--font-weight); letter-spacing: -.02em; overflow-wrap: anywhere; }
+.borrow-request-hint { margin: 0 0 24px; color: var(--color-muted); font-size: 14px; line-height: 1.5; }
+.borrow-request-dates { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 520px) { .borrow-request-dates { grid-template-columns: 1fr; } }

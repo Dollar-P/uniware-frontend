@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import ProfilePage from './pages/ProfilePage';
 import RegisterPage from './pages/RegisterPage';
 import EquipmentDetailPage from './pages/EquipmentDetailPage';
 import CatalogPage from './pages/CatalogPage';
@@ -11,8 +12,9 @@ import { currentUser, logout } from './services/sessionApi';
 import type { RegisterResponse } from './types/auth';
 import uniwareLogo from './assets/brand/uniware-logo.svg';
 
-type Route = 'signup' | 'login' | 'account' | 'my-equipment' | 'catalog' | 'provider-requests' | 'my-requests' | `provider-requests/${string}` | `my-requests/${string}` | `equipment/${string}`;
+type Route = 'profile' | 'signup' | 'login' | 'account' | 'my-equipment' | 'catalog' | 'provider-requests' | 'my-requests' | `provider-requests/${string}` | `my-requests/${string}` | `equipment/${string}`;
 function readRoute(): Route {
+  if (window.location.hash === '#profile') return 'profile';
   if (window.location.hash === '#catalog') return 'catalog';
   if (window.location.hash === '#provider-requests') return 'provider-requests';
   if (window.location.hash.startsWith('#provider-requests/')) return window.location.hash.slice(1) as Route;
@@ -75,7 +77,7 @@ function App() {
         setUser(account);
         // 'my-equipment' is an authenticated route like 'account': a signed-in user
         // stays put, and a signed-out one is sent to login.
-        const authenticatedRoute = route === 'account' || route === 'catalog' || route === 'my-equipment' || route === 'provider-requests' || route === 'my-requests' || route.startsWith('provider-requests/') || route.startsWith('my-requests/') || route.startsWith('equipment/');
+        const authenticatedRoute = route === 'profile' || route === 'account' || route === 'catalog' || route === 'my-equipment' || route === 'provider-requests' || route === 'my-requests' || route.startsWith('provider-requests/') || route.startsWith('my-requests/') || route.startsWith('equipment/');
         if (account && !authenticatedRoute) window.location.hash = 'account';
         if (!account && authenticatedRoute) window.location.hash = 'login';
       } catch {
@@ -96,10 +98,13 @@ function App() {
     return () => { active = false; window.removeEventListener('focus', recheckOnFocus); };
   }, [route, attempt]);
   useEffect(() => {
-    document.title = `${route === 'login' ? 'Sign in' : route === 'account' ? 'Your account' : route === 'catalog' ? 'Equipment catalog' : route === 'my-equipment' ? 'My equipment' : route.startsWith('provider-requests/') ? 'Request details' : route === 'provider-requests' ? 'Borrow requests' : route.startsWith('my-requests/') ? 'Request details' : route === 'my-requests' ? 'My borrow requests' : route.startsWith('equipment/') ? 'Equipment details' : 'Sign up'} · UniWare`;
+    document.title = `${route === 'profile' ? 'Your profile' : route === 'login' ? 'Sign in' : route === 'account' ? 'Your account' : route === 'catalog' ? 'Equipment catalog' : route === 'my-equipment' ? 'My equipment' : route.startsWith('provider-requests/') ? 'Request details' : route === 'provider-requests' ? 'Borrow requests' : route.startsWith('my-requests/') ? 'Request details' : route === 'my-requests' ? 'My borrow requests' : route.startsWith('equipment/') ? 'Equipment details' : 'Sign up'} · UniWare`;
   }, [route]);
   // EPIC2: the provider surfaces need a signed-in user, so they render only once the
   // session check has resolved.
+  if (route === 'profile' && !checking && user) {
+    return <ProfilePage onSaved={setUser} />;
+  }
   if (route === 'catalog' && !checking && user) {
     return <CatalogPage user={user} onLogout={handleLogout} loggingOut={loggingOut} logoutError={logoutError} />;
   }
@@ -128,7 +133,7 @@ function App() {
     try { id = decodeURIComponent(route.slice('my-requests/'.length)); } catch { /* Invalid IDs show not found. */ }
     return <MyRequestDetailPage key={id} user={user} requestId={id} />;
   }
-  if (checking || route === 'account' || route === 'catalog' || route === 'my-equipment' || route === 'provider-requests' || route === 'my-requests' || route.startsWith('provider-requests/') || route.startsWith('my-requests/') || route.startsWith('equipment/')) {
+  if (checking || route === 'profile' || route === 'account' || route === 'catalog' || route === 'my-equipment' || route === 'provider-requests' || route === 'my-requests' || route.startsWith('provider-requests/') || route.startsWith('my-requests/') || route.startsWith('equipment/')) {
     return (
       <main className="account-page">
         <img className="uniware-logo" src={uniwareLogo} alt="UniWare" />
@@ -150,6 +155,7 @@ function App() {
                   user.is_borrower && 'Borrower', user.is_provider && 'Provider', user.is_admin && 'Admin',
                 ].filter(Boolean).join(', ') || 'No equipment permissions assigned'}</dd></div>
               </dl>
+              <a className="register-button account-action-link" href="#profile">View and edit profile</a>
               <a className="register-button account-action-link" href="#catalog">Browse equipment</a>
               {user.is_borrower && (
                 <a className="register-button account-action-link" href="#my-requests">My borrow requests</a>

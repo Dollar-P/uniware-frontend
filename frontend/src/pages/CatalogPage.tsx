@@ -15,6 +15,15 @@ export default function CatalogPage({ user, onLogout, loggingOut, logoutError }:
   const [page, setPage] = useState(1);
   const [attempt, setAttempt] = useState(0);
   const [filters, setFilters] = useState<Filters>({});
+  const [search, setSearch] = useState('');
+  const [draft, setDraft] = useState('');
+  function applySearch(value: string) {
+    const trimmed = value.trim();
+    setDraft(trimmed);
+    setSearch(trimmed);
+    setPage(1);
+    setAttempt(value => value + 1);
+  }
   return (
     <main className="catalog-page">
       <header className="catalog-header">
@@ -34,20 +43,53 @@ export default function CatalogPage({ user, onLogout, loggingOut, logoutError }:
         <h1 id="catalog-title">Find your next tool.</h1>
         <p className="catalog-description">Explore equipment across the university and check its current status.</p>
       </section>
+
       <CatalogFilters onApply={next => { setFilters(next); setPage(1); setAttempt(value => value + 1); }} />
+
+      <form className="catalog-search" role="search" onSubmit={event => { event.preventDefault(); applySearch(draft); }}>
+        <div className="form-field">
+          <label htmlFor="catalog-search">Search equipment</label>
+          <input id="catalog-search" type="search" value={draft} onChange={event => setDraft(event.target.value)}
+            placeholder="Equipment name or model" aria-describedby="catalog-search-help" />
+          <p id="catalog-search-help">Search by name or model, including part of a word.</p>
+        </div>
+        <div className="catalog-search-actions">
+          <button className="register-button" type="submit">Search</button>
+          <button className="register-button button-secondary" type="button" disabled={!draft && !search}
+            onClick={() => applySearch('')}>Clear search</button>
+        </div>
+      </form>
       {logoutError && <p className="form-message form-message-error" role="alert">{logoutError}</p>}
-      <CatalogResults key={JSON.stringify([page, attempt, filters])} page={page} filters={filters} setPage={setPage} retry={() => setAttempt(value => value + 1)} />
+      <CatalogResults key={JSON.stringify([page, attempt, search])} page={page} search={search} setPage={setPage} retry={() => setAttempt(value => value + 1)} />
+
     </main>
   );
 }
 
-function CatalogResults({ page, filters, setPage, retry }: { page: number; filters: Filters; setPage: (page: number) => void; retry: () => void }) {
+function CatalogResults({ page, search, filters, setPage, retry }: {
+  page: number;
+  search: string;
+  filters: Filters;
+  setPage: (page: number) => void;
+  retry: () => void;
+}) {
   const [data, setData] = useState<Paginated<Equipment> | null>(null);
   const [error, setError] = useState('');
   const filtered = Object.values(filters).some(Boolean);
   useEffect(() => {
     let active = true;
-    void (filtered ? listEquipment(page, filters) : listEquipment(page)).then(result => { if (active) setData(result); }).catch(cause => {
+    
+    const query = {
+      ...filters,
+      ...(search ? { search } : {}),
+    };
+
+    void (Object.keys(query).length
+      ? listEquipment(page, query)
+      : listEquipment(page)
+    ).then(result => {
+      if (active) setData(result);
+    }).catch(cause => {
       if (!active) return;
       if (cause instanceof EquipmentError && cause.status === 401) {
         window.location.hash = 'login';
@@ -56,15 +98,40 @@ function CatalogResults({ page, filters, setPage, retry }: { page: number; filte
       setError(cause instanceof Error ? cause.message : 'Unable to load the equipment catalog.');
     });
     return () => { active = false; };
-  }, [page, filters, filtered]);
+
+  }, [page, search, filters]);
+  
   if (error) return <div className="catalog-state" role="alert"><p>{error}</p><button className="register-button" onClick={retry}>Try again</button></div>;
   if (!data) return <p className="catalog-state" role="status">Loading catalog...</p>;
   return (
     <>
-      <p className="catalog-count" role="status">{data.count} item{data.count === 1 ? '' : 's'} {filtered ? 'matching your filters' : 'in the catalog'}</p>
+      <p className="catalog-count" role="status">
+        {data.count} item{data.count === 1 ? '' : 's'}{' '}
+        {search
+          ? `matching “${search}”${filtered ? ' and your filters' : ''}`
+          : filtered
+            ? 'matching your filters'
+            : 'in the catalog'}
+      </p>
       {data.results.length === 0 ? (
-        <div className="catalog-state"><h2>{filtered ? 'No equipment matches these filters' : 'No equipment to show'}</h2>
-          <p>{filtered ? 'Try fewer filters, or clear your filters to browse all equipment.' : 'Check back soon for new items from providers.'}</p></div>
+        <div className="catalog-state">
+          <h2>
+            {search
+              ? 'No matching equipment'
+              : filtered
+                ? 'No equipment matches these filters'
+                : 'No equipment to show'}
+          </h2>
+          <p>
+            {search && filtered
+              ? 'Try another name or model, adjust your filters, or clear both to browse all equipment.'
+              : search
+                ? 'Try another name or model, or clear your search to browse all equipment.'
+                : filtered
+                  ? 'Try fewer filters, or clear your filters to browse all equipment.'
+                  : 'Check back soon for new items from providers.'}
+          </p>
+        </div>
       ) : (
         <ul className="catalog-grid" aria-label="Equipment catalog">
           {data.results.map(item => (

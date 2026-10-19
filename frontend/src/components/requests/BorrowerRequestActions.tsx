@@ -23,7 +23,7 @@ export default function BorrowerRequestActions({ request, onChanged }: {
   const today = toDateInput(new Date());
   const beforePickup = request.pickup_date >= today;
   const canEdit = request.status === 'PENDING' && beforePickup;
-  const canCancel = beforePickup && (request.status === 'PENDING' || request.status === 'APPROVED');
+  const canCancel = beforePickup && request.status === 'PENDING';
 
   if (!canEdit && !canCancel) return null;
 

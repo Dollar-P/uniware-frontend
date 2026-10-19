@@ -235,10 +235,22 @@ describe('Borrower edits and cancels their own request', () => {
     expect(screen.queryByRole('button', { name: 'Cancel request' })).not.toBeInTheDocument();
   });
 
-  it('allows cancelling an approved request but does not allow editing it', async () => {
+  it('hides edit and cancel for an approved request (US4-5)', async () => {
     vi.mocked(getMyBorrowRequest).mockResolvedValue(futureRequest('APPROVED'));
     render(<MyRequestDetailPage user={borrower} requestId="req-1" />);
-    expect(await screen.findByRole('button', { name: 'Cancel request' })).toBeInTheDocument();
+    expect(await screen.findByText('APPROVED')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Cancel request' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Edit details' })).not.toBeInTheDocument();
+    expect(cancelMyBorrowRequest).not.toHaveBeenCalled();
+  });
+
+  it('hides edit and cancel for a pending request after its pickup date', async () => {
+    vi.mocked(getMyBorrowRequest).mockResolvedValue(makeRequest({
+      status: 'PENDING', pickup_date: '2025-01-01', due_date: '2025-01-03',
+    }));
+    render(<MyRequestDetailPage user={borrower} requestId="req-1" />);
+    expect(await screen.findByText('PENDING')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Cancel request' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Edit details' })).not.toBeInTheDocument();
   });
 
@@ -255,10 +267,10 @@ describe('Borrower edits and cancels their own request', () => {
 
   it('shows a state-conflict error if the provider already acted', async () => {
     vi.mocked(getMyBorrowRequest).mockResolvedValue(futureRequest());
-    vi.mocked(cancelMyBorrowRequest).mockRejectedValue(new MyRequestError('Only pending or approved requests can be cancelled.', 409));
+    vi.mocked(cancelMyBorrowRequest).mockRejectedValue(new MyRequestError('Only pending borrow requests can be cancelled.', 409));
     render(<MyRequestDetailPage user={borrower} requestId="req-1" />);
     await userEvent.click(await screen.findByRole('button', { name: 'Cancel request' }));
     await userEvent.click(screen.getByRole('button', { name: 'Yes, cancel request' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent('Only pending or approved requests can be cancelled.');
+    expect(await screen.findByRole('alert')).toHaveTextContent('Only pending borrow requests can be cancelled.');
   });
 });

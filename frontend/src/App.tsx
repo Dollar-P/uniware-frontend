@@ -59,14 +59,19 @@ function App() {
   }, []);
   useEffect(() => {
     let active = true;
-    async function check() {
-      if (logoutPending.current) return;
+    let foregroundPending = true;
+    async function check(background = false) {
+      if (logoutPending.current || (background && foregroundPending)) return;
       const version = ++sessionVersion.current;
-      setChecking(true);
-      setError('');
+      // Refocusing must not replace the current page and discard its form state.
+      if (!background) {
+        setChecking(true);
+        setError('');
+      }
       try {
         const account = await currentUser();
         if (!active || version !== sessionVersion.current) return;
+        setError('');
         setUser(account);
         // 'my-equipment' is an authenticated route like 'account': a signed-in user
         // stays put, and a signed-out one is sent to login.
@@ -74,17 +79,21 @@ function App() {
         if (account && !authenticatedRoute) window.location.hash = 'account';
         if (!account && authenticatedRoute) window.location.hash = 'login';
       } catch {
-        if (active && version === sessionVersion.current) {
+        // A failed background request is not evidence that the session expired.
+        // Keep the current page; a confirmed anonymous response above still redirects.
+        if (!background && active && version === sessionVersion.current) {
           setUser(null);
           setError('We could not check your session. Please try again.');
         }
       } finally {
+        if (!background) foregroundPending = false;
         if (active && version === sessionVersion.current) setChecking(false);
       }
     }
     void check();
-    window.addEventListener('focus', check);
-    return () => { active = false; window.removeEventListener('focus', check); };
+    const recheckOnFocus = () => { void check(true); };
+    window.addEventListener('focus', recheckOnFocus);
+    return () => { active = false; window.removeEventListener('focus', recheckOnFocus); };
   }, [route, attempt]);
   useEffect(() => {
     document.title = `${route === 'login' ? 'Sign in' : route === 'account' ? 'Your account' : route === 'catalog' ? 'Equipment catalog' : route === 'my-equipment' ? 'My equipment' : route.startsWith('provider-requests/') ? 'Request details' : route === 'provider-requests' ? 'Borrow requests' : route.startsWith('my-requests/') ? 'Request details' : route === 'my-requests' ? 'My borrow requests' : route.startsWith('equipment/') ? 'Equipment details' : 'Sign up'} · UniWare`;

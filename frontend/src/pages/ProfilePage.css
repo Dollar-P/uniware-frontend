@@ -1,0 +1,10 @@
+.profile-page { min-height: 100svh; padding: clamp(24px, 6vw, 80px); background: var(--color-surface); }
+.profile-header { max-width: 960px; margin: auto; display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+.profile-header a { color: var(--color-primary); text-underline-offset: 4px; }
+.profile-content { max-width: 640px; margin: 48px auto; }
+.profile-content h1 { font-weight: var(--font-weight); letter-spacing: -.035em; }
+.profile-subtitle { color: var(--color-muted); line-height: 1.6; }
+.profile-form { margin-top: 28px; }
+.profile-actions { display: flex; gap: 16px; flex-wrap: wrap; }
+.profile-actions .register-button { flex: 1 1 140px; }
+.profile-header a:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 4px; }

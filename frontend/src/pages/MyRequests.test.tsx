@@ -132,7 +132,7 @@ describe('US4-3 my borrow request detail', () => {
     expect(screen.getByText('Electronics lab project')).toBeInTheDocument();
     expect(screen.getByText('20 Oct 2026')).toBeInTheDocument();
     expect(screen.getByText('23 Oct 2026')).toBeInTheDocument();
-    expect(screen.getByText('Waiting for the provider to decide.')).toBeInTheDocument();
+    expect(screen.getByText(/request submitted; awaiting processing/i)).toBeInTheDocument();
   });
 
   it('shows the provider reason on a rejected request', async () => {
@@ -246,7 +246,7 @@ describe('Borrower edits and cancels their own request', () => {
     for (const status of ['REJECTED', 'COMPLETED', 'CHECKED_OUT', 'CANCELLED'] as const) {
       vi.mocked(getMyBorrowRequest).mockResolvedValue(futureRequest(status));
       const mounted = render(<MyRequestDetailPage user={borrower} requestId="req-1" />);
-      await screen.findByText(status);
+      await screen.findByText(status.replaceAll('_', ' '));
       expect(screen.queryByRole('button', { name: 'Cancel request' })).not.toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Edit details' })).not.toBeInTheDocument();
       mounted.unmount();

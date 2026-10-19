@@ -7,8 +7,8 @@ afterEach(() => vi.unstubAllGlobals());
 describe('US3-3 filter contract', () => {
   it.each([
     { category: 'cat-1' }, { location: 'loc-1' },
-    { status: 'AVAILABLE' as const }, { status: 'RESERVED' as const },
-    { status: 'CHECKED_OUT' as const }, { status: 'MAINTENANCE' as const },
+    { availability: 'available' as const },
+    { availability: 'unavailable' as const },
   ])('sends a single supported filter %o', async filters => {
     const fetch = vi.fn().mockResolvedValue(new Response('{}'));
     vi.stubGlobal('fetch', fetch);
@@ -21,10 +21,10 @@ describe('US3-3 filter contract', () => {
   it('combines filters in one request while preserving pagination and encoding', async () => {
     const fetch = vi.fn().mockResolvedValue(new Response('{}'));
     vi.stubGlobal('fetch', fetch);
-    await listEquipment(3, { category: '  cat&1 ', location: 'loc/2', status: 'AVAILABLE' });
+    await listEquipment(3, { category: '  cat&1 ', location: 'loc/2', availability: 'unavailable' });
     const url = new URL(fetch.mock.calls[0][0], 'http://localhost');
     expect(url.pathname).toBe('/api/equipment');
-    expect(Object.fromEntries(url.searchParams)).toEqual({ page: '3', category: 'cat&1', location: 'loc/2', status: 'AVAILABLE' });
+    expect(Object.fromEntries(url.searchParams)).toEqual({ page: '3', category: 'cat&1', location: 'loc/2', availability: 'unavailable' });
     expect(fetch).toHaveBeenCalledTimes(1);
   });
 
@@ -35,10 +35,10 @@ describe('US3-3 filter contract', () => {
     expect(fetch.mock.calls[0][0]).toBe('/api/equipment?page=1');
   });
 
-  it.each(['ARCHIVED', 'DISABLED', 'unknown', ''])('rejects unsupported availability %s before fetching', async status => {
+  it.each(['AVAILABLE', 'MAINTENANCE', 'ARCHIVED', 'DISABLED', 'unknown', ''])('rejects unsupported availability %s before fetching', async availability => {
     const fetch = vi.fn();
     vi.stubGlobal('fetch', fetch);
-    await expect(listEquipment(1, { status: status as CatalogAvailability })).rejects.toMatchObject({ status: 400 });
+    await expect(listEquipment(1, { availability: availability as CatalogAvailability })).rejects.toMatchObject({ status: 400 });
     expect(fetch).not.toHaveBeenCalled();
   });
 

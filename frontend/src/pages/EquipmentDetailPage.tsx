@@ -10,9 +10,8 @@ import uniwareLogo from '../assets/brand/uniware-logo.svg';
 import './MyEquipmentPage.css';
 import './EquipmentDetailPage.css';
 
-// RESERVED/CHECKED_OUT describe today, not the requested period, so the backend still
-// accepts them and its date-range check decides (apps/borrowing/availability.py).
-const REQUESTABLE_STATUSES: EquipmentStatus[] = ['AVAILABLE', 'RESERVED', 'CHECKED_OUT'];
+// This backend only allows new requests for AVAILABLE equipment.
+const REQUESTABLE_STATUSES: EquipmentStatus[] = ['AVAILABLE'];
 
 export default function EquipmentDetailPage({ equipmentId, user }: { equipmentId: string; user?: RegisterResponse }) {
   const [attempt, setAttempt] = useState(0);

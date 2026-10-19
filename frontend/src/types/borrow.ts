@@ -1,6 +1,6 @@
 import type { BorrowRequestStatus } from './borrowRequest';
 
-/** Write shape for POST /api/requests/borrow-requests/ (apps/borrowing/serializers.py). */
+/** Write shape for POST /api/requests/borrow-requests/ (apps/requests/serializers.py). */
 export interface BorrowRequestPayload {
   equipment_id: string;
   pickup_date: string;
@@ -18,8 +18,8 @@ export interface BorrowRequest {
   status: BorrowRequestStatus;
   decision_reason: string;
   decided_at: string | null;
-  created_at: string;
-  updated_at: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export type BorrowRequestFormErrors = Partial<Record<keyof BorrowRequestPayload, string>>;

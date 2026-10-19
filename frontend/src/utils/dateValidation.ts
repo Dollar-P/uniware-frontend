@@ -1,5 +1,5 @@
-/** US4-2 date rules. Mirrors validate_request_dates in apps/borrowing/availability.py;
- *  the backend re-checks them and is the source of truth. */
+/** Frontend date-selection policy. The backend validates past dates and overlaps,
+ *  but does not enforce the 30-day/90-day convenience limits. */
 export const MAX_LOAN_DAYS = 30;
 export const MAX_ADVANCE_DAYS = 90;
 const DAY_MS = 24 * 60 * 60 * 1000;

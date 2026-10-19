@@ -12,6 +12,7 @@ function respond(body: unknown, status: number) {
 
 describe('borrow request API (US4-1)', () => {
   afterEach(() => { vi.unstubAllGlobals(); document.cookie = 'csrftoken=; Max-Age=0'; });
+
   it('posts snake_case fields with session cookies and the CSRF token', async () => {
     document.cookie = 'csrftoken=borrow-token';
     const fetchMock = respond({ id: 'req-1', status: 'PENDING' }, 201);

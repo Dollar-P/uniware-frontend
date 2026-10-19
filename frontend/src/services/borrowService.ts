@@ -14,6 +14,7 @@ export async function createBorrowRequest(payload: BorrowRequestPayload): Promis
     method: 'POST', credentials: 'include', headers,
     body: JSON.stringify({ ...payload, purpose: payload.purpose.trim() }),
   });
+
   if (!response.ok) {
     const data: ApiError | null = await response.json().catch(() => null);
     const fields: BorrowRequestFormErrors = {};

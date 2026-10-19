@@ -48,7 +48,7 @@ export default function ProviderRequestsPage({ user }: { user: RegisterResponse 
   if (!canManage || denied) return (
     <main className="provider-request-page"><ProviderHeader />
       <section className="provider-request-panel"><h1>Provider access required</h1>
-        <p>You must be an active provider to manage borrowing requests.</p>
+        <p>You must be an active provider to view borrowing requests.</p>
         <a href="#account">Back to account</a></section>
     </main>
   );
@@ -59,7 +59,7 @@ export default function ProviderRequestsPage({ user }: { user: RegisterResponse 
       <section className="provider-request-panel" aria-labelledby="provider-inbox-title">
         <header className="provider-request-heading">
           <div><h1 id="provider-inbox-title">Borrow requests</h1>
-            <p>Review borrowing requests for your equipment.</p></div>
+            <p>View borrowing requests for your equipment. Decisions are not available yet.</p></div>
           <span>{count} request{count === 1 ? '' : 's'}</span>
         </header>
         <div className="provider-request-tabs" role="group" aria-label="Filter requests">

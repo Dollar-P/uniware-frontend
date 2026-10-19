@@ -5,7 +5,7 @@ import { BorrowRequestError } from '../../types/borrow';
 import type { BorrowRequest, BorrowRequestFormErrors } from '../../types/borrow';
 import { MAX_ADVANCE_DAYS, MAX_LOAN_DAYS, addDays, toDateInput, validateBorrowDates } from '../../utils/dateValidation';
 
-const PURPOSE_MAX_LENGTH = 1000; // PURPOSE_MAX_LENGTH in apps/borrowing/serializers.py
+const PURPOSE_MAX_LENGTH = 1000; // Frontend input limit; the backend accepts a nonempty purpose.
 
 /** US4-1/US4-2: borrower submits pickup/due dates and purpose for one equipment item. */
 export default function BorrowRequestModal({ equipment, onClose, onSubmitted }: {

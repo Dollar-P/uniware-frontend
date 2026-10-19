@@ -1,9 +1,10 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from './App';
 import { currentUser, login, logout } from './services/sessionApi';
 import type { RegisterResponse } from './types/auth';
+import * as equipmentApi from './services/equipmentApi';
 vi.mock('./services/sessionApi', () => ({ currentUser: vi.fn(), login: vi.fn(), logout: vi.fn() }));
 const account: RegisterResponse = {
   id: 'uuid', email: 'user@chula.ac.th', first_name: 'Test', last_name: 'User',
@@ -11,6 +12,45 @@ const account: RegisterResponse = {
   account_status: 'ACTIVE', date_joined: '',
 };
 describe('session navigation', () => {
+  afterEach(() => { vi.restoreAllMocks(); });
+  it.each(['signup', 'login'])('preserves the %s form while refocus checks run and finish', async route => {
+    window.location.hash = route;
+    render(<App />);
+    const email = await screen.findByLabelText('University Email');
+    const password = screen.getByLabelText('Password');
+    await userEvent.type(email, 'draft@chula.ac.th');
+    await userEvent.type(password, 'unfinished password');
+    let finish!: (value: RegisterResponse | null) => void;
+    vi.mocked(currentUser).mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    act(() => { window.dispatchEvent(new Event('focus')); });
+    expect(screen.getByLabelText('University Email')).toBe(email);
+    expect(email).toHaveValue('draft@chula.ac.th');
+    expect(screen.queryByText('Checking your session...')).not.toBeInTheDocument();
+    await act(async () => { finish(null); });
+    expect(screen.getByLabelText('University Email')).toBe(email);
+    expect(password).toHaveValue('unfinished password');
+  });
+  it('keeps unsaved provider input after both a failed and a successful background check', async () => {
+    window.location.hash = 'my-equipment';
+    vi.mocked(currentUser).mockResolvedValue(account);
+    vi.spyOn(equipmentApi, 'listMyEquipment').mockResolvedValue({ count: 0, next: null, previous: null, results: [] });
+    vi.spyOn(equipmentApi, 'listCategories').mockResolvedValue([]);
+    vi.spyOn(equipmentApi, 'listLocations').mockResolvedValue([]);
+    render(<App />);
+    await screen.findByText('No equipment yet');
+    await userEvent.click(screen.getAllByRole('button', { name: 'Add equipment' })[0]);
+    const name = await screen.findByLabelText('Equipment name');
+    await waitFor(() => expect(name).toBeEnabled());
+    await userEvent.type(name, 'Unsaved microscope');
+    vi.mocked(currentUser).mockRejectedValueOnce(new Error('Network down'));
+    await act(async () => { window.dispatchEvent(new Event('focus')); });
+    expect(screen.getByLabelText('Equipment name')).toBe(name);
+    expect(name).toHaveValue('Unsaved microscope');
+    vi.mocked(currentUser).mockResolvedValue({ ...account });
+    await act(async () => { window.dispatchEvent(new Event('focus')); });
+    expect(screen.getByLabelText('Equipment name')).toBe(name);
+    expect(name).toHaveValue('Unsaved microscope');
+  });
   it('logs out and denies subsequent protected navigation', async () => {
     window.location.hash = 'account';
     vi.mocked(currentUser).mockResolvedValue(account);

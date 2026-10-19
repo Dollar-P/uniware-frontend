@@ -1,12 +1,10 @@
 import type { ApiError } from '../types/auth';
 import type { ProviderBorrowRequest, ProviderRequestPage, RequestWire } from '../types/borrowRequest';
 import { ProviderRequestError } from '../types/borrowRequest';
-import { providerRequestFixtures } from '../test/fixtures/providerRequests';
 import { normalizePage, normalizeRequest } from './providerRequestsAdapter';
 
+// Backend: apps.requests.urls_provider (SimpleRouter with trailing_slash=False).
 const baseUrl = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
-const isMock = import.meta.env.VITE_PROVIDER_REQUESTS_MOCK === 'true';
-// Read-only provider request API backed by apps.requests.urls_provider.
 const providerPath = `${baseUrl}/provider/requests`;
 
 async function readJson<T>(response: Response, fallback: string): Promise<T> {
@@ -17,38 +15,41 @@ async function readJson<T>(response: Response, fallback: string): Promise<T> {
   return response.json();
 }
 
-// Mock lives behind the same API surface as real fetch; state is in-memory per browser tab.
-const mockData: ProviderBorrowRequest[] = structuredClone(providerRequestFixtures);
-export function resetProviderRequestsMockForTests(): void {
-  mockData.splice(0, mockData.length, ...structuredClone(providerRequestFixtures));
-}
-
-async function mockList(page: number, status: string): Promise<ProviderRequestPage> {
-  const subset = mockData.filter(item => status === 'ALL' || item.status === status);
-  const pageSize = 10;
-  const start = (page - 1) * pageSize;
-  return { count: subset.length, next: start + pageSize < subset.length ? `?page=${page + 1}` : null,
-    previous: page > 1 ? `?page=${page - 1}` : null, results: subset.slice(start, start + pageSize) };
-}
-
-async function mockDetail(id: string): Promise<ProviderBorrowRequest> {
-  const item = mockData.find(request => request.id === id);
-  if (!item) throw new ProviderRequestError('Request not found.', 404);
-  return structuredClone(item);
+function csrfHeaders(): Record<string, string> {
+  // Django authenticates requests with the session cookie and requires a CSRF token for writes.
+  const token = document.cookie.split('; ').find(value => value.startsWith('csrftoken='));
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers['X-CSRFToken'] = decodeURIComponent(token.slice('csrftoken='.length));
+  return headers;
 }
 
 export async function listProviderRequests(page = 1, status = 'PENDING'): Promise<ProviderRequestPage> {
-  if (isMock) return mockList(page, status);
   const search = new URLSearchParams({ page: String(page) });
   if (status !== 'ALL') search.set('status', status);
   const response = await fetch(`${providerPath}?${search}`, { credentials: 'include', cache: 'no-store' });
-  const payload = await readJson<{ count: number; next: string | null; previous: string | null; results: RequestWire[] } | RequestWire[]>(response, 'Unable to load borrowing requests.');
+  const payload = await readJson<{
+    count: number; next: string | null; previous: string | null; results: RequestWire[]
+  } | RequestWire[]>(response, 'Unable to load borrowing requests.');
   return normalizePage(payload);
 }
 
 export async function getProviderRequest(id: string): Promise<ProviderBorrowRequest> {
-  if (isMock) return mockDetail(id);
   const response = await fetch(`${providerPath}/${encodeURIComponent(id)}`, { credentials: 'include', cache: 'no-store' });
   return normalizeRequest(await readJson<RequestWire>(response, 'Unable to load request details.'));
 }
 
+/** US5-3. Backend performs the final availability/ownership/state check and can return HTTP 409. */
+export async function approveProviderRequest(id: string): Promise<ProviderBorrowRequest> {
+  const response = await fetch(`${providerPath}/${encodeURIComponent(id)}/approve`, {
+    method: 'POST', credentials: 'include', headers: csrfHeaders(), body: JSON.stringify({}),
+  });
+  return normalizeRequest(await readJson<RequestWire>(response, 'Unable to approve this request.'));
+}
+
+/** US5-4. Django expects {reason: string}; the reason must be nonblank and <=2000 characters. */
+export async function rejectProviderRequest(id: string, reason: string): Promise<ProviderBorrowRequest> {
+  const response = await fetch(`${providerPath}/${encodeURIComponent(id)}/reject`, {
+    method: 'POST', credentials: 'include', headers: csrfHeaders(), body: JSON.stringify({ reason: reason.trim() }),
+  });
+  return normalizeRequest(await readJson<RequestWire>(response, 'Unable to reject this request.'));
+}

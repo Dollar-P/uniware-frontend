@@ -59,7 +59,7 @@ export default function ProviderRequestsPage({ user }: { user: RegisterResponse 
       <section className="provider-request-panel" aria-labelledby="provider-inbox-title">
         <header className="provider-request-heading">
           <div><h1 id="provider-inbox-title">Borrow requests</h1>
-            <p>View borrowing requests for your equipment. Decisions are not available yet.</p></div>
+            <p>Review and approve or reject borrowing requests for the equipment you manage.</p></div>
           <span>{count} request{count === 1 ? '' : 's'}</span>
         </header>
         <div className="provider-request-tabs" role="group" aria-label="Filter requests">

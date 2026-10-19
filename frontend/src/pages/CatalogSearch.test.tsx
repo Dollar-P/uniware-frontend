@@ -1,13 +1,15 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import CatalogPage from './CatalogPage';
-import { listEquipment } from '../services/equipmentApi';
+import { listCategories, listEquipment, listLocations } from '../services/equipmentApi';
 import { EquipmentError } from '../types/equipment';
 import type { Equipment, Paginated } from '../types/equipment';
 import type { RegisterResponse } from '../types/auth';
 
-vi.mock('../services/equipmentApi', () => ({ listEquipment: vi.fn() }));
+vi.mock('../services/equipmentApi', () => ({
+  listEquipment: vi.fn(), listCategories: vi.fn(), listLocations: vi.fn(),
+}));
 const user: RegisterResponse = {
   id: 'u1', email: 'user@chula.ac.th', first_name: 'Test', last_name: 'User', department: '',
   is_admin: false, is_provider: false, is_borrower: true, account_status: 'ACTIVE', date_joined: '',
@@ -27,6 +29,10 @@ async function search(value: string) {
   await userEvent.type(screen.getByRole('searchbox'), value);
   await userEvent.click(screen.getByRole('button', { name: 'Search' }));
 }
+beforeEach(() => {
+  vi.mocked(listCategories).mockResolvedValue([item.category]);
+  vi.mocked(listLocations).mockResolvedValue([item.location]);
+});
 afterEach(() => { vi.resetAllMocks(); window.history.replaceState(null, '', '/'); });
 
 describe('US3-2 catalog search', () => {

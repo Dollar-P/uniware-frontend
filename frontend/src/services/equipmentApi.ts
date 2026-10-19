@@ -32,8 +32,11 @@ async function readJson<T>(response: Response, fallback: string): Promise<T> {
 }
 
 /** US3-1: the shared catalog. Borrowers see only borrowable statuses (enforced server-side). */
-export async function listEquipment(page = 1): Promise<Paginated<Equipment>> {
-  const response = await fetch(`${baseUrl}/equipment?page=${page}`, {
+export async function listEquipment(page = 1, query: { search?: string } = {}): Promise<Paginated<Equipment>> {
+  const params = new URLSearchParams({ page: String(page) });
+  const search = query.search?.trim();
+  if (search) params.set('search', search);
+  const response = await fetch(`${baseUrl}/equipment?${params}`, {
     credentials: 'include',
     cache: 'no-store',
   });

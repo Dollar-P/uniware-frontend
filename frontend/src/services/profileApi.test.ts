@@ -38,4 +38,8 @@ describe('profile contract', () => {
       first_name: expect.any(String), last_name: expect.any(String), department: expect.any(String),
     });
   });
+  it('reports a save-specific fallback for non-JSON server errors', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('Bad gateway', { status: 502 })));
+    await expect(updateProfile({ first_name: 'Pat', last_name: 'User', department: '' })).rejects.toThrow('Unable to save your profile');
+  });
 });

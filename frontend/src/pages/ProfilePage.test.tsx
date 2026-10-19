@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ProfilePage from './ProfilePage';
 import * as api from '../services/profileApi';
@@ -59,5 +59,18 @@ describe('profile page', () => {
     render(<ProfilePage onSaved={vi.fn()} />);
     await userEvent.click(await screen.findByRole('button', { name: 'Try again' }));
     expect(await screen.findByText(profile.email)).toBeInTheDocument();
+  });
+  it('does not update the parent session if a save finishes after leaving the profile', async () => {
+    let finish!: (value: Profile) => void;
+    vi.spyOn(api, 'getProfile').mockResolvedValue(profile);
+    vi.spyOn(api, 'updateProfile').mockImplementation(() => new Promise(resolve => { finish = resolve; }));
+    const onSaved = vi.fn();
+    const view = render(<ProfilePage onSaved={onSaved} />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Edit profile' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Save changes' }));
+    expect(screen.getByRole('button', { name: 'Saving...' })).toBeDisabled();
+    view.unmount();
+    await act(async () => { finish(profile); });
+    expect(onSaved).not.toHaveBeenCalled();
   });
 });

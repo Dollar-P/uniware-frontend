@@ -26,4 +26,10 @@ remain backend responsibilities.
 Frontend tests verify view/prefill, save, invalid edits, server field errors,
 restricted-key allowlisting, cancel, retry, and missing endpoints. API responses
 are mocked for save tests; a successful live save cannot be verified until the
-backend implements this contract. Run npx vitest run src, npm run lint, npm run build.
+backend implements this contract. Route tests also check anonymous access and
+preservation of drafts during browser-refocus session checks; late saves do not
+update the parent session after navigating away.
+
+Run npx vitest run src, npm run lint, npm run build. The unchanged base has two
+unrelated failing assertions in MyRequests.test.tsx (old pending-status wording
+and CHECKED_OUT versus the displayed CHECKED OUT). These are left outside scope.

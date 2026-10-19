@@ -4,7 +4,7 @@ import type { Profile, ProfileErrors, ProfileUpdate } from '../types/profile';
 
 const baseUrl = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
 
-async function readProfile(response: Response): Promise<Profile> {
+async function readProfile(response: Response, fallback: string): Promise<Profile> {
   if (!response.ok) {
     const body: ApiError | null = await response.json().catch(() => null);
     const fields: ProfileErrors = {};
@@ -14,7 +14,7 @@ async function readProfile(response: Response): Promise<Profile> {
         if (Array.isArray(details[field])) fields[field] = details[field].join(' ');
       }
     }
-    throw new ProfileError(body?.error?.message || 'Unable to load your profile. Please try again.', response.status, fields);
+    throw new ProfileError(body?.error?.message || fallback, response.status, fields);
   }
   return response.json();
 }
@@ -25,7 +25,7 @@ export async function getProfile(): Promise<Profile> {
   if (response.status === 404) {
     response = await fetch(`${baseUrl}/auth/me`, { credentials: 'include', cache: 'no-store' });
   }
-  return readProfile(response);
+  return readProfile(response, 'Unable to load your profile. Please try again.');
 }
 
 export async function updateProfile(data: ProfileUpdate): Promise<Profile> {
@@ -44,5 +44,5 @@ export async function updateProfile(data: ProfileUpdate): Promise<Profile> {
   if (response.status === 404 || response.status === 405) {
     throw new ProfileError('Profile updates are not available yet. Your changes have not been saved.', response.status);
   }
-  return readProfile(response);
+  return readProfile(response, 'Unable to save your profile. Please try again.');
 }

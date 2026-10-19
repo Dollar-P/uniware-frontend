@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { getProfile, updateProfile } from '../services/profileApi';
 import { EDITABLE_PROFILE_FIELDS, ProfileError, validateProfile } from '../types/profile';
@@ -30,14 +30,16 @@ function ProfileContent({ onSaved, retry }: { onSaved: (profile: Profile) => voi
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [saving, setSaving] = useState(false);
+  const mounted = useRef(false);
   useEffect(() => {
     let active = true;
+    mounted.current = true;
     void getProfile().then(result => { if (active) setProfile(result); }).catch(cause => {
       if (!active) return;
       if (cause instanceof ProfileError && cause.status === 401) window.location.hash = 'login';
       else setError(cause instanceof Error ? cause.message : 'Unable to load your profile.');
     });
-    return () => { active = false; };
+    return () => { active = false; mounted.current = false; };
   }, []);
 
   async function save(event: FormEvent<HTMLFormElement>) {
@@ -51,17 +53,19 @@ function ProfileContent({ onSaved, retry }: { onSaved: (profile: Profile) => voi
     setSaving(true);
     try {
       const saved = await updateProfile(draft);
+      if (!mounted.current) return;
       setProfile(saved);
       setDraft(null);
       onSaved(saved);
       setNotice('Your profile has been saved.');
     } catch (cause) {
+      if (!mounted.current) return;
       if (cause instanceof ProfileError) {
         if (cause.status === 401) { window.location.hash = 'login'; return; }
         setErrors(cause.fields);
       }
       setError(cause instanceof Error ? cause.message : 'Unable to save your profile. Please try again.');
-    } finally { setSaving(false); }
+    } finally { if (mounted.current) setSaving(false); }
   }
 
   if (!profile) return error ? <><p className="form-message form-message-error" role="alert">{error}</p><button className="register-button" onClick={retry}>Try again</button></> : <p role="status">Loading your profile...</p>;

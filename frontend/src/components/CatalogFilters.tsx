@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { listCategories, listLocations } from '../services/equipmentApi';
-import { EquipmentError, STATUS_LABELS } from '../types/equipment';
+import { EquipmentError } from '../types/equipment';
 import type { Category, Location } from '../types/equipment';
 import { CATALOG_AVAILABILITIES, isCatalogAvailability } from '../types/catalogFilters';
 import type { CatalogFilters as Filters } from '../types/catalogFilters';
@@ -42,7 +42,7 @@ export default function CatalogFilters({ onApply }: { onApply: (filters: Filters
     onApply({
       ...(category ? { category } : {}),
       ...(location ? { location } : {}),
-      ...(isCatalogAvailability(status) ? { status } : {}),
+      ...(isCatalogAvailability(status) ? { availability: status } : {}),
     });
   }
 
@@ -78,7 +78,7 @@ export default function CatalogFilters({ onApply }: { onApply: (filters: Filters
             <label htmlFor="catalog-availability">Availability</label>
             <select id="catalog-availability" value={status} onChange={event => setStatus(event.target.value)}>
               <option value="">All availability</option>
-              {CATALOG_AVAILABILITIES.map(value => <option key={value} value={value}>{STATUS_LABELS[value]}</option>)}
+              {CATALOG_AVAILABILITIES.map(value => <option key={value} value={value}>{value === 'available' ? 'Available' : 'Unavailable'}</option>)}
             </select>
           </div>
         </div>

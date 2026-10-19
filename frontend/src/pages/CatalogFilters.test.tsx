@@ -33,12 +33,14 @@ beforeEach(() => {
 afterEach(() => { vi.resetAllMocks(); window.history.replaceState(null, '', '/'); });
 
 describe('US3-3 catalog filters', () => {
-  it('loads backend reference choices and only borrower-visible availability options', async () => {
+  it('loads backend reference choices and the two backend-supported availability options', async () => {
     mount();
     await ready();
     expect(screen.getByRole('option', { name: 'Lab' })).toHaveValue('cat');
     expect(screen.getByRole('option', { name: 'Building A' })).toHaveValue('loc');
-    expect(screen.getByRole('option', { name: 'Checked out' })).toHaveValue('CHECKED_OUT');
+    expect(screen.getByRole('option', { name: 'Available' })).toHaveValue('available');
+    expect(screen.getByRole('option', { name: 'Unavailable' })).toHaveValue('unavailable');
+    expect(screen.queryByRole('option', { name: 'Checked out' })).not.toBeInTheDocument();
     expect(screen.queryByRole('option', { name: 'Archived' })).not.toBeInTheDocument();
     expect(screen.queryByRole('option', { name: 'Disabled' })).not.toBeInTheDocument();
     expect(listCategories).toHaveBeenCalledOnce();
@@ -48,11 +50,12 @@ describe('US3-3 catalog filters', () => {
   it.each([
     ['Category', 'cat', { category: 'cat' }],
     ['Location', 'loc', { location: 'loc' }],
-    ['Availability', 'AVAILABLE', { status: 'AVAILABLE' }],
+    ['Availability (available)', 'available', { availability: 'available' }],
+    ['Availability (unavailable)', 'unavailable', { availability: 'unavailable' }],
   ] as const)('applies %s independently only after submission', async (label, value, expected) => {
     mount();
     await ready();
-    await userEvent.selectOptions(screen.getByLabelText(label), value);
+    await userEvent.selectOptions(screen.getByLabelText(label.startsWith('Availability') ? 'Availability' : label), value);
     expect(listEquipment).toHaveBeenCalledOnce();
     await apply();
     await waitFor(() => expect(listEquipment).toHaveBeenLastCalledWith(1, expected));
@@ -67,9 +70,9 @@ describe('US3-3 catalog filters', () => {
     await waitFor(() => expect(listEquipment).toHaveBeenLastCalledWith(2));
     await userEvent.selectOptions(screen.getByLabelText('Category'), 'cat');
     await userEvent.selectOptions(screen.getByLabelText('Location'), 'loc');
-    await userEvent.selectOptions(screen.getByLabelText('Availability'), 'AVAILABLE');
+    await userEvent.selectOptions(screen.getByLabelText('Availability'), 'available');
     await apply();
-    const filters = { category: 'cat', location: 'loc', status: 'AVAILABLE' };
+    const filters = { category: 'cat', location: 'loc', availability: 'available' };
     await waitFor(() => expect(listEquipment).toHaveBeenLastCalledWith(1, filters));
     await userEvent.click(await screen.findByRole('button', { name: 'Next' }));
     await waitFor(() => expect(listEquipment).toHaveBeenLastCalledWith(2, filters));
@@ -83,7 +86,7 @@ describe('US3-3 catalog filters', () => {
     vi.mocked(listEquipment).mockResolvedValueOnce(results).mockResolvedValueOnce(empty).mockResolvedValue(results);
     mount();
     await ready();
-    await userEvent.selectOptions(screen.getByLabelText('Availability'), 'MAINTENANCE');
+    await userEvent.selectOptions(screen.getByLabelText('Availability'), 'unavailable');
     await apply();
     expect(await screen.findByText('No equipment matches these filters')).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'View Microscope' })).not.toBeInTheDocument();
@@ -102,6 +105,17 @@ describe('US3-3 catalog filters', () => {
     expect(listEquipment).toHaveBeenCalledOnce();
     await userEvent.click(screen.getByRole('button', { name: 'Clear filters' }));
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('blocks an unsupported availability option injected into the select', async () => {
+    mount();
+    await ready();
+    const select = screen.getByLabelText('Availability');
+    select.appendChild(new Option('Archived', 'ARCHIVED'));
+    fireEvent.change(select, { target: { value: 'ARCHIVED' } });
+    await apply();
+    expect(screen.getByRole('alert')).toHaveTextContent('Choose supported filter values');
+    expect(listEquipment).toHaveBeenCalledOnce();
   });
 
   it('surfaces a stale filter rejection and retains selections for retry or clearing', async () => {
@@ -135,9 +149,9 @@ describe('US3-3 catalog filters', () => {
     mount();
     await ready();
     expect(screen.queryByRole('option', { name: 'Lab' })).not.toBeInTheDocument();
-    await userEvent.selectOptions(screen.getByLabelText('Availability'), 'AVAILABLE');
+    await userEvent.selectOptions(screen.getByLabelText('Availability'), 'available');
     await apply();
-    await waitFor(() => expect(listEquipment).toHaveBeenLastCalledWith(1, { status: 'AVAILABLE' }));
+    await waitFor(() => expect(listEquipment).toHaveBeenLastCalledWith(1, { availability: 'available' }));
   });
 
   it('ignores a slow filtered response after clearing the filters', async () => {
@@ -146,7 +160,7 @@ describe('US3-3 catalog filters', () => {
       .mockImplementationOnce(() => new Promise(resolve => { finish = resolve; })).mockResolvedValue(results);
     mount();
     await ready();
-    await userEvent.selectOptions(screen.getByLabelText('Availability'), 'MAINTENANCE');
+    await userEvent.selectOptions(screen.getByLabelText('Availability'), 'unavailable');
     await apply();
     await userEvent.click(screen.getByRole('button', { name: 'Clear filters' }));
     await screen.findByText('1 item in the catalog');

@@ -51,11 +51,13 @@ export async function listEquipment(
     params.set('location', query.location.trim());
   }
 
-  if (query.status !== undefined) {
-    if (!isCatalogAvailability(query.status)) {
-      throw new EquipmentError('Choose a supported availability.', {}, 400);
+  if (query.availability !== undefined) {
+    if (!isCatalogAvailability(query.availability)) {
+      throw new EquipmentError(
+        'Choose a supported availability.', {}, 400
+      );
     }
-    params.set('status', query.status);
+    params.set('availability', query.availability);
   }
   const response = await fetch(`${baseUrl}/equipment?${params}`, {
     credentials: 'include',

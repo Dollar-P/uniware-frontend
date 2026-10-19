@@ -6,16 +6,8 @@ import { normalizePage, normalizeRequest } from './providerRequestsAdapter';
 
 const baseUrl = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
 const isMock = import.meta.env.VITE_PROVIDER_REQUESTS_MOCK === 'true';
-// Contract pending Chalk's implementation; only edit these paths if his API differs.
+// Read-only provider request API backed by apps.requests.urls_provider.
 const providerPath = `${baseUrl}/provider/requests`;
-
-function csrfHeaders(): Record<string, string> {
-  const token = document.cookie.split('; ').find(value => value.startsWith('csrftoken='));
-  return {
-    'Content-Type': 'application/json',
-    ...(token ? { 'X-CSRFToken': decodeURIComponent(token.slice('csrftoken='.length)) } : {}),
-  };
-}
 
 async function readJson<T>(response: Response, fallback: string): Promise<T> {
   if (!response.ok) {
@@ -26,9 +18,9 @@ async function readJson<T>(response: Response, fallback: string): Promise<T> {
 }
 
 // Mock lives behind the same API surface as real fetch; state is in-memory per browser tab.
-let mockData: ProviderBorrowRequest[] = structuredClone(providerRequestFixtures);
+const mockData: ProviderBorrowRequest[] = structuredClone(providerRequestFixtures);
 export function resetProviderRequestsMockForTests(): void {
-  mockData = structuredClone(providerRequestFixtures);
+  mockData.splice(0, mockData.length, ...structuredClone(providerRequestFixtures));
 }
 
 async function mockList(page: number, status: string): Promise<ProviderRequestPage> {
@@ -43,17 +35,6 @@ async function mockDetail(id: string): Promise<ProviderBorrowRequest> {
   const item = mockData.find(request => request.id === id);
   if (!item) throw new ProviderRequestError('Request not found.', 404);
   return structuredClone(item);
-}
-
-async function mockDecision(id: string, next: 'APPROVED' | 'REJECTED', reason: string): Promise<ProviderBorrowRequest> {
-  const item = await mockDetail(id);
-  if (item.status !== 'PENDING') throw new ProviderRequestError('This request has already been handled.', 409, 'INVALID_STATE_TRANSITION');
-  if (next === 'REJECTED' && !reason.trim()) throw new ProviderRequestError('A rejection reason is required.', 400, 'VALIDATION_ERROR');
-  mockData = mockData.map(request => request.id === id ? {
-    ...request, status: next, decision_reason: next === 'REJECTED' ? reason.trim() : '',
-    decided_at: new Date().toISOString(), decided_by: 'mock-provider',
-  } : request);
-  return mockDetail(id);
 }
 
 export async function listProviderRequests(page = 1, status = 'PENDING'): Promise<ProviderRequestPage> {
@@ -71,20 +52,3 @@ export async function getProviderRequest(id: string): Promise<ProviderBorrowRequ
   return normalizeRequest(await readJson<RequestWire>(response, 'Unable to load request details.'));
 }
 
-export async function approveProviderRequest(id: string): Promise<ProviderBorrowRequest> {
-  if (isMock) return mockDecision(id, 'APPROVED', '');
-  const response = await fetch(`${providerPath}/${encodeURIComponent(id)}/approve`, {
-    method: 'POST', headers: csrfHeaders(), credentials: 'include', body: JSON.stringify({}),
-  });
-  return normalizeRequest(await readJson<RequestWire>(response, 'Unable to approve this request.'));
-}
-
-export async function rejectProviderRequest(id: string, reason: string): Promise<ProviderBorrowRequest> {
-  if (!reason.trim()) throw new ProviderRequestError('Please provide a reason for rejection.', 400, 'VALIDATION_ERROR');
-  if (isMock) return mockDecision(id, 'REJECTED', reason);
-  const response = await fetch(`${providerPath}/${encodeURIComponent(id)}/reject`, {
-    method: 'POST', headers: csrfHeaders(), credentials: 'include',
-    body: JSON.stringify({ reason: reason.trim() }), // Chalk: confirm key is reason vs decision_reason.
-  });
-  return normalizeRequest(await readJson<RequestWire>(response, 'Unable to reject this request.'));
-}

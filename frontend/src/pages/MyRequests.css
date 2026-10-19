@@ -1,0 +1,13 @@
+/* US4-3 borrower view. Shared card, badge and grid primitives come from ProviderRequests.css. */
+.my-request-status-help { margin: 0; font-size: 14px; color: var(--color-muted); }
+
+/* US4 borrower self-service controls */
+.my-request-management { border-top: 1px solid var(--color-line); padding-top: 22px; }
+.my-request-management h3 { margin: 0; font-size: 19px; }
+.my-request-edit-form, .my-request-confirm { display: grid; gap: 16px; }
+.my-request-edit-form > p, .my-request-confirm > p { margin: 0; color: var(--color-muted); }
+.my-request-edit-form .borrow-request-dates { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 18px; }
+.my-request-edit-form .form-field { display: flex; flex-direction: column; gap: 7px; }
+.my-request-edit-form input, .my-request-edit-form textarea { width: 100%; box-sizing: border-box; min-width: 0; border: 1px solid var(--color-line); border-radius: 10px; padding: 12px; background: #fff; color: var(--color-text); font: inherit; }
+.my-request-edit-form .form-error { color: var(--color-error); margin: 0; font-size: 14px; }
+@media (max-width: 650px) { .my-request-edit-form .borrow-request-dates { grid-template-columns: 1fr; } }

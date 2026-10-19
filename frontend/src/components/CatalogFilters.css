@@ -1,0 +1,18 @@
+.catalog-filters {
+  max-width: 1280px;
+  margin: 0 auto 32px;
+  padding: 24px 0;
+  border-block: 1px solid var(--color-line);
+}
+.catalog-filters fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
+.catalog-filters legend { padding: 0; font-size: 20px; }
+.catalog-filters-help { margin: 12px 0 20px; color: var(--color-muted); font-size: 14px; line-height: 1.5; }
+.catalog-filter-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+.catalog-filter-fields .form-field { min-width: 0; }
+.catalog-filter-fields select { font-optical-sizing: inherit; font-variation-settings: inherit; }
+.catalog-filter-actions { display: flex; gap: 12px; margin-top: 20px; }
+.catalog-filter-actions .register-button { margin: 0; }
+@media (max-width: 620px) {
+  .catalog-filter-fields { grid-template-columns: 1fr; gap: 16px; }
+  .catalog-filter-actions .register-button { flex: 1; min-width: 0; padding-inline: 12px; }
+}

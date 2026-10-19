@@ -1,4 +1,6 @@
 import { EquipmentError } from '../types/equipment';
+import { isCatalogAvailability } from '../types/catalogFilters';
+import type { CatalogFilters } from '../types/catalogFilters';
 import type { ApiError } from '../types/auth';
 import type { Category, Equipment, EquipmentFormErrors, EquipmentRequest, Location, Paginated } from '../types/equipment';
 
@@ -32,8 +34,17 @@ async function readJson<T>(response: Response, fallback: string): Promise<T> {
 }
 
 /** US3-1: the shared catalog. Borrowers see only borrowable statuses (enforced server-side). */
-export async function listEquipment(page = 1): Promise<Paginated<Equipment>> {
-  const response = await fetch(`${baseUrl}/equipment?page=${page}`, {
+export async function listEquipment(page = 1, filters: CatalogFilters = {}): Promise<Paginated<Equipment>> {
+  const params = new URLSearchParams({ page: String(page) });
+  if (filters.category?.trim()) params.set('category', filters.category.trim());
+  if (filters.location?.trim()) params.set('location', filters.location.trim());
+  if (filters.status !== undefined) {
+    if (!isCatalogAvailability(filters.status)) {
+      throw new EquipmentError('Choose a supported availability.', {}, 400);
+    }
+    params.set('status', filters.status);
+  }
+  const response = await fetch(`${baseUrl}/equipment?${params}`, {
     credentials: 'include',
     cache: 'no-store',
   });

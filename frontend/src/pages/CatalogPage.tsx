@@ -60,7 +60,7 @@ export default function CatalogPage({ user, onLogout, loggingOut, logoutError }:
         </div>
       </form>
       {logoutError && <p className="form-message form-message-error" role="alert">{logoutError}</p>}
-      <CatalogResults key={JSON.stringify([page, attempt, search])} page={page} search={search} setPage={setPage} retry={() => setAttempt(value => value + 1)} />
+      <CatalogResults key={JSON.stringify([page, attempt, search, filters])} page={page} search={search} setPage={setPage} filters={filters} retry={() => setAttempt(value => value + 1)} />
 
     </main>
   );

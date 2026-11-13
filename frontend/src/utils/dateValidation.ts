@@ -18,7 +18,7 @@ export function addDays(day: string, days: number): string {
   return toDateInput(date);
 }
 
-function daysBetween(from: string, to: string): number {
+export function daysBetween(from: string, to: string): number {
   // Date.UTC avoids a 23/25-hour day across a daylight-saving change.
   const utc = (day: string) => { const [y, m, d] = day.split('-').map(Number); return Date.UTC(y, m - 1, d); };
   return Math.round((utc(to) - utc(from)) / DAY_MS);

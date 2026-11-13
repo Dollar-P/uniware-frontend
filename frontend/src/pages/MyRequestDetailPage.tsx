@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import RequestStatusBadge from '../components/requests/RequestStatusBadge';
 import BorrowerRequestActions from '../components/requests/BorrowerRequestActions';
+import LoanDueBadge from '../components/requests/LoanDueBadge';
 import { getMyBorrowRequest } from '../services/myRequestsApi';
 import { dateLabel, MY_REQUEST_STATUS_HELP, MyRequestError } from '../types/borrowRequest';
 import type { MyBorrowRequest } from '../types/borrowRequest';
 import type { RegisterResponse } from '../types/auth';
+import { lastLoanDay } from '../utils/loanDates';
 import { MyRequestsHeader } from './MyRequestsHeader';
 import './ProviderRequests.css';
 import './MyRequests.css';
@@ -77,7 +79,15 @@ export default function MyRequestDetailPage({ user, requestId }: { user: Registe
               <div><dt>Category</dt><dd>{request.equipment.category.name}</dd></div>
               <div><dt>Location</dt><dd>{request.equipment.location.name}</dd></div>
               <div><dt>Pickup date</dt><dd>{dateLabel(request.pickup_date)}</dd></div>
-              <div><dt>Return date</dt><dd>{dateLabel(request.due_date)}</dd></div>
+              {request.status === 'CHECKED_OUT' ? (
+                // US8-1: an active loan shows the last day the borrower may keep the item.
+                <div><dt>Return by</dt><dd>{dateLabel(lastLoanDay(request.due_date))} <LoanDueBadge dueDate={request.due_date} /></dd></div>
+              ) : (
+                <div><dt>Return date</dt><dd>{dateLabel(request.due_date)}</dd></div>
+              )}
+              {request.returned_at && (
+                <div><dt>Returned on</dt><dd>{new Date(request.returned_at).toLocaleString('en-GB')}</dd></div>
+              )}
               <div className="provider-request-wide"><dt>Purpose</dt><dd>{request.purpose}</dd></div>
               {request.decision_reason && (
                 <div className="provider-request-wide"><dt>Reason given by the provider</dt><dd>{request.decision_reason}</dd></div>
@@ -91,7 +101,9 @@ export default function MyRequestDetailPage({ user, requestId }: { user: Registe
               setRequest(updated);
               setSuccess(message);
             }} />
-            <a className="provider-request-button" href="#my-requests">Back to my requests</a>
+            {request.status === 'CHECKED_OUT'
+              ? <a className="provider-request-button" href="#my-loans">Back to my loans</a>
+              : <a className="provider-request-button" href="#my-requests">Back to my requests</a>}
           </>
         ) : null}
       </section>

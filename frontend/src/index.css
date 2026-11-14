@@ -32,9 +32,11 @@ button, input, a { -webkit-tap-highlight-color: transparent; }
 .catalog-header,
 .equipment-page-header,
 .provider-request-header,
-.profile-header {
+.profile-header,
+.user-management-header {
   position: sticky;
   top: 0;
   z-index: 10;
   background: var(--color-surface);
 }
+.equipment-suspension-notice{color:#a12222;background:#fff1f1;border-left:4px solid #b91c1c;padding:9px 12px;border-radius:4px;margin:10px 0;}

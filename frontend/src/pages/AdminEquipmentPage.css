@@ -1,0 +1,17 @@
+
+.admin-equipment-search{display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin:22px 0}
+.admin-equipment-search input{min-width:200px;flex:1;padding:10px;border:1px solid #cbd5e1;border-radius:7px}
+.admin-equipment-list{list-style:none;padding:0;display:grid;gap:14px}
+.admin-equipment-list li{border:1px solid #cbd5e1;border-radius:10px;padding:16px;display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap}
+.admin-equipment-controls{display:flex;flex-direction:column;gap:8px;min-width:180px;max-width:400px}
+.admin-equipment-controls small{color:#64748b}
+.admin-equipment-reason{display:grid;gap:8px}
+.admin-equipment-reason textarea{min-height:72px;border:1px solid #94a3b8;border-radius:7px;padding:8px;font:inherit}
+.admin-equipment-pages{display:flex;align-items:center;gap:16px;margin-top:18px}
+.admin-equipment-pages button{padding:8px 14px}
+.equipment-suspension-notice{color:#a12222;background:#fff1f1;border-left:4px solid #b91c1c;padding:9px 12px;border-radius:4px;margin:10px 0}
+.equipment-notifications{margin-top:20px;text-align:left;border-top:1px solid #ddd;padding-top:14px}
+.equipment-notifications h2{font-size:1.1rem}
+.equipment-notifications ul{padding-left:18px;max-height:260px;overflow:auto}
+.equipment-notifications li{margin:10px 0}
+.equipment-notifications small{color:#64748b}

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import ApproveConfirmDialog from '../components/requests/ApproveConfirmDialog';
 import RejectRequestDialog from '../components/requests/RejectRequestDialog';
 import RequestStatusBadge from '../components/requests/RequestStatusBadge';
+import SuspensionNotice from '../components/equipment/SuspensionNotice';
 import BorrowerName from '../components/requests/BorrowerName';
 import ReturnConditionDialog from '../components/requests/ReturnConditionDialog';
 import { approveProviderRequest, getProviderRequest, rejectProviderRequest, returnProviderRequest } from '../services/providerRequestsApi';
@@ -58,7 +59,7 @@ export default function ProviderRequestDetailPage({ user, requestId }: { user: R
 
   async function decide(action: Exclude<Decision, null>, reason?: string) {
     if (!request || request.status !== 'PENDING' || decisionBusy ||
-      (action === 'approve' && request.borrower.account_status === 'SUSPENDED')) return;
+      (action === 'approve' && (request.borrower.account_status === 'SUSPENDED' || request.equipment.is_suspended))) return;
     setDecisionBusy(true);
     setDecisionError('');
     try {
@@ -150,12 +151,13 @@ export default function ProviderRequestDetailPage({ user, requestId }: { user: R
             )}
             {request.decision_reason && <div className="provider-request-wide"><dt>Decision reason</dt><dd>{request.decision_reason}</dd></div>}
           </dl>
+          <SuspensionNotice equipment={request.equipment} />
           {request.status === 'PENDING' && request.borrower.account_status === 'SUSPENDED' && (
             <p className="provider-request-error" role="status">Approval is unavailable while the borrower account is suspended.</p>
           )}
           {request.status === 'PENDING' && (
             <div className="provider-request-actions" aria-label="Request decision actions">
-              {request.borrower.account_status !== 'SUSPENDED' && (
+              {request.borrower.account_status !== 'SUSPENDED' && !request.equipment.is_suspended && (
                 <button type="button" className="provider-request-button provider-request-button-primary" disabled={decisionBusy} onClick={() => openDecision('approve')}>Approve</button>
               )}
               <button type="button" className="provider-request-button provider-request-button-danger" disabled={decisionBusy} onClick={() => openDecision('reject')}>Reject</button>
@@ -172,7 +174,7 @@ export default function ProviderRequestDetailPage({ user, requestId }: { user: R
         <ReturnConditionDialog busy={decisionBusy} error={decisionError} onCancel={() => setReturnOpen(false)}
           onConfirm={condition => void markReturned(condition)} />
       )}
-      {decision === 'approve' && request?.status === 'PENDING' && request.borrower.account_status !== 'SUSPENDED' && (
+      {decision === 'approve' && request?.status === 'PENDING' && request.borrower.account_status !== 'SUSPENDED' && !request.equipment.is_suspended && (
         <ApproveConfirmDialog busy={decisionBusy} error={decisionError} onCancel={() => setDecision(null)} onConfirm={() => void decide('approve')} />
       )}
       {decision === 'reject' && request?.status === 'PENDING' && (

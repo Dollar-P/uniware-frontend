@@ -64,7 +64,7 @@ export default function UserManagementPage({ user }: { user: RegisterResponse })
         setError('You cannot suspend your own account.');
         return;
       }
-      if (!window.confirm(`Suspend ${target.first_name} ${target.last_name} (${target.email})? Their existing sessions will be revoked, and they will be unable to log in.`)) return;
+      if (!window.confirm(`Suspend ${target.first_name} ${target.last_name} (${target.email})? Their existing sessions will be revoked, all equipment they own will be suspended, and they will be unable to log in.`)) return;
     }
     setSaving(target.id);
     setError('');
@@ -72,7 +72,7 @@ export default function UserManagementPage({ user }: { user: RegisterResponse })
     try {
       const updated = await updateUserStatus(target.id, next);
       setUsers(current => current.map(item => item.id === updated.id ? updated : item));
-      setNotice(`${updated.email} ${next === 'SUSPENDED' ? 'suspended' : 'reactivated'}.`);
+      setNotice(`${updated.email} ${next === 'SUSPENDED' ? 'suspended; their equipment is now unavailable for new borrowing' : 'reactivated; their equipment is available again unless manually suspended'}.`);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unable to update account status.');
     } finally {
@@ -84,7 +84,7 @@ export default function UserManagementPage({ user }: { user: RegisterResponse })
     <main className="user-management-page">
       <header className="user-management-header">
         <img src={uniwareLogo} alt="UniWare" />
-        <nav><a href="#account">Your account</a><a href="#catalog">Browse equipment</a></nav>
+        <nav><a href="#account">Your account</a><a href="#catalog">Browse equipment</a><a href="#admin-equipment">Equipment suspension</a></nav>
       </header>
       <section className="user-management-panel">
         <h1>User management</h1>

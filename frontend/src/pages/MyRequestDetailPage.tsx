@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import RequestStatusBadge from '../components/requests/RequestStatusBadge';
+import SuspensionNotice from '../components/equipment/SuspensionNotice';
 import BorrowerRequestActions from '../components/requests/BorrowerRequestActions';
 import { checkoutMyBorrowRequest, getMyBorrowRequest } from '../services/myRequestsApi';
 import { dateLabel, MY_REQUEST_STATUS_HELP, MyRequestError } from '../types/borrowRequest';
@@ -47,7 +48,7 @@ export default function MyRequestDetailPage({ user, requestId }: { user: Registe
   }, [canBorrow, load]);
 
   async function checkout() {
-    if (!request || request.status !== 'APPROVED') return;
+    if (!request || request.status !== 'APPROVED' || request.equipment.is_suspended) return;
     setCheckoutBusy(true);
     setCheckoutError('');
     setSuccess('');
@@ -85,6 +86,7 @@ export default function MyRequestDetailPage({ user, requestId }: { user: Registe
               <RequestStatusBadge status={request.status} />
             </div>
             <p className="my-request-status-help">{MY_REQUEST_STATUS_HELP[request.status]}</p>
+            <SuspensionNotice equipment={request.equipment} />
             <dl className="provider-request-detail-grid">
               <div><dt>Asset ID</dt><dd>{request.equipment.asset_id}</dd></div>
               <div><dt>Model</dt><dd>{request.equipment.model || 'Not specified'}</dd></div>
@@ -108,7 +110,7 @@ export default function MyRequestDetailPage({ user, requestId }: { user: Registe
             </dl>
             {success && <p role="status" className="provider-request-success">{success}</p>}
             {checkoutError && <p role="alert" className="provider-request-error">{checkoutError}</p>}
-            {request.status === 'APPROVED' && (
+            {request.status === 'APPROVED' && !request.equipment.is_suspended && (
               <button type="button" className="provider-request-button provider-request-button-primary provider-request-button-refresh"
                 disabled={checkoutBusy} onClick={() => void checkout()}>
                 {checkoutBusy ? 'Checking out...' : 'Check out'}

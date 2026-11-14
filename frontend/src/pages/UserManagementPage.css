@@ -5,3 +5,17 @@
 .user-account-action-suspend { color: #b91c1c; }
 .user-account-action-reactivate { color: #166534; }
 .user-account-action:disabled { opacity: .45; cursor: not-allowed; }
+
+.user-management-page {
+  max-width: none;
+  min-height: 100svh;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.user-management-header,
+.user-management-panel {
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+}

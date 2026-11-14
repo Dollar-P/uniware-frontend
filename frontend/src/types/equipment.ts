@@ -35,6 +35,9 @@ export interface Equipment {
   category: Category;
   location: Location;
   status: EquipmentStatus;
+  admin_suspended: boolean;
+  is_suspended: boolean;
+  suspension_reason: string;
   archived_at: string | null;
   disabled_at: string | null;
   created_at: string;

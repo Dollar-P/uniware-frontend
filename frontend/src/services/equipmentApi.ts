@@ -116,3 +116,31 @@ export async function listLocations(): Promise<Location[]> {
   const response = await fetch(`${baseUrl}/locations`, { credentials: 'include' });
   return readJson(response, 'Unable to load locations.');
 }
+
+
+/** Only admin accounts may suspend/reactivate items independently of inventory status. */
+export async function listAdminEquipment(page = 1, search = ''): Promise<Paginated<Equipment>> {
+  const params = new URLSearchParams({ page: String(page) });
+  if (search.trim()) params.set('search', search.trim());
+  const response = await fetch(`${baseUrl}/admin/equipment?${params}`, { credentials: 'include', cache: 'no-store' });
+  return readJson(response, 'Unable to load equipment for administration.');
+}
+
+export async function updateEquipmentSuspension(id: string, suspended: boolean, reason = ''): Promise<Equipment> {
+  const response = await fetch(`${baseUrl}/admin/equipment/${encodeURIComponent(id)}/suspension`, {
+    method: 'PATCH', credentials: 'include', headers: csrfHeaders(),
+    body: JSON.stringify({ is_suspended: suspended, reason }),
+  });
+  return readJson(response, 'Unable to change equipment suspension.');
+}
+
+export interface EquipmentNotice {
+  id: number;
+  equipment_id: string;
+  message: string;
+  created_at: string;
+}
+export async function listEquipmentNotices(): Promise<EquipmentNotice[]> {
+  const response = await fetch(`${baseUrl}/notifications`, { credentials: 'include', cache: 'no-store' });
+  return readJson(response, 'Unable to load notifications.');
+}

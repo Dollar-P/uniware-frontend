@@ -18,7 +18,7 @@ const item: Equipment = {
   id: 'eq-1', asset_id: 'ASSET-1', name: 'Microscope', model: 'MX-5', description: 'A lab microscope',
   provider: 'provider',
   owner: { name: 'Pat Provider', email: 'pat@chula.ac.th', department: 'Engineering' }, category: { id: 'cat', name: 'Lab' }, location: { id: 'loc', name: 'Building A' },
-  status: 'MAINTENANCE', archived_at: null, disabled_at: null, created_at: '', updated_at: '',
+  status: 'MAINTENANCE', admin_suspended: false, is_suspended: false, suspension_reason: '', archived_at: null, disabled_at: null, created_at: '', updated_at: '',
 };
 const result = { results: [item], count: 21, next: '/api/equipment?page=2', previous: null };
 const catalog = <CatalogPage user={user} onLogout={vi.fn()} loggingOut={false} logoutError="" />;

@@ -25,7 +25,7 @@ const equipment: Equipment = {
   description: 'Four-channel digital oscilloscope', provider: 'provider-1',
   owner: { name: 'Pat Provider', email: 'pat@chula.ac.th', department: 'Engineering' },
   category: { id: 'cat-1', name: 'Electronics' }, location: { id: 'loc-1', name: 'Engineering Lab' },
-  status: 'AVAILABLE', archived_at: null, disabled_at: null,
+  status: 'AVAILABLE', admin_suspended: false, is_suspended: false, suspension_reason: '', archived_at: null, disabled_at: null,
   created_at: '2026-10-01T09:00:00Z', updated_at: '2026-10-01T09:00:00Z',
 };
 

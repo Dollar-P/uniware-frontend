@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { listEquipment } from '../services/equipmentApi';
 import { EquipmentError, STATUS_LABELS } from '../types/equipment';
 import type { Equipment, Paginated } from '../types/equipment';
+import SuspensionNotice from '../components/equipment/SuspensionNotice';
 import type { RegisterResponse } from '../types/auth';
 import type { CatalogFilters as Filters } from '../types/catalogFilters';
 import CatalogFilters from '../components/CatalogFilters';
@@ -33,6 +34,7 @@ export default function CatalogPage({ user, onLogout, loggingOut, logoutError }:
           {user.is_borrower && <a href="#my-requests">My requests</a>}
           {user.is_provider && <a href="#my-equipment">My equipment</a>}
           {user.is_provider && <a href="#provider-requests">Borrow requests</a>}
+          {user.is_admin && <a href="#admin-equipment">Equipment suspension</a>}
           <button className="register-button logout-button" onClick={onLogout} disabled={loggingOut}>
             {loggingOut ? 'Logging out...' : 'Log out'}
           </button>
@@ -144,6 +146,7 @@ function CatalogResults({ page, search, filters, setPage, retry }: {
                   <p className="catalog-card-model">{item.model || 'Model not specified'}</p>
                   <p className="catalog-card-location">{item.location.name}</p>
                   <p className="catalog-card-owner">Owner: <strong>{item.owner.name}</strong></p>
+                  <SuspensionNotice equipment={item} />
                   <span className={`equipment-status equipment-status-${item.status.toLowerCase()}`}>{STATUS_LABELS[item.status]}</span>
                   <span className="catalog-card-arrow" aria-hidden="true">↗</span>
                 </div>

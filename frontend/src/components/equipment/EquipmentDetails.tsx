@@ -17,6 +17,9 @@ export default function EquipmentDetails({ equipment }: { equipment: Equipment }
         <div><dt>Model</dt><dd>{equipment.model || 'Not specified'}</dd></div>
         <div><dt>Category</dt><dd>{equipment.category.name}</dd></div>
         <div><dt>Location</dt><dd>{equipment.location.name}</dd></div>
+        <div><dt>Owner</dt><dd>{equipment.owner.name}</dd></div>
+        <div><dt>Owner email</dt><dd><a href={`mailto:${equipment.owner.email}`}>{equipment.owner.email}</a></dd></div>
+        <div><dt>Owner department</dt><dd>{equipment.owner.department || 'Not specified'}</dd></div>
         <div><dt>Description</dt><dd>{equipment.description || 'No description provided.'}</dd></div>
       </dl>
     </article>

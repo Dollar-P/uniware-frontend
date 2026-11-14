@@ -16,7 +16,8 @@ const user: RegisterResponse = {
 };
 const item: Equipment = {
   id: 'eq-1', asset_id: 'ASSET-1', name: 'Microscope', model: 'MX-5', description: 'A lab microscope',
-  provider: 'provider', category: { id: 'cat', name: 'Lab' }, location: { id: 'loc', name: 'Building A' },
+  provider: 'provider',
+  owner: { name: 'Pat Provider', email: 'pat@chula.ac.th', department: 'Engineering' }, category: { id: 'cat', name: 'Lab' }, location: { id: 'loc', name: 'Building A' },
   status: 'MAINTENANCE', archived_at: null, disabled_at: null, created_at: '', updated_at: '',
 };
 const result = { results: [item], count: 21, next: '/api/equipment?page=2', previous: null };
@@ -38,6 +39,19 @@ describe('equipment discovery integration', () => {
     expect(screen.queryByText('Microscope')).not.toBeInTheDocument();
     expect(list).toHaveBeenLastCalledWith(2);
     expect(screen.getByRole('button', { name: 'Next' })).toBeDisabled();
+  });
+  it('shows the owner name on catalog cards', async () => {
+    vi.spyOn(api, 'listEquipment').mockResolvedValue(result);
+    render(catalog);
+    expect(await screen.findByText('Pat Provider')).toBeInTheDocument();
+    expect(screen.queryByText('pat@chula.ac.th')).not.toBeInTheDocument();
+  });
+  it('shows owner name, email and department in equipment details', async () => {
+    vi.spyOn(api, 'getEquipment').mockResolvedValue(item);
+    render(<EquipmentDetailPage equipmentId={item.id} />);
+    expect(await screen.findByText('Pat Provider')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'pat@chula.ac.th' })).toHaveAttribute('href', 'mailto:pat@chula.ac.th');
+    expect(screen.getByText('Engineering')).toBeInTheDocument();
   });
   it('shows an empty catalog', async () => {
     vi.spyOn(api, 'listEquipment').mockResolvedValue({ results: [], count: 0, next: null, previous: null });

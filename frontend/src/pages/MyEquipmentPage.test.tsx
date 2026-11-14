@@ -18,6 +18,7 @@ function makeEquipment(overrides: Partial<Equipment> = {}): Equipment {
   return {
     id: 'eq-1', asset_id: 'AST-001', name: 'Microscope', model: 'MX-5', description: 'Lab scope',
     provider: 'user-1',
+  owner: { name: 'Pat Provider', email: 'pat@chula.ac.th', department: 'Engineering' },
     category: { id: 'cat-1', name: 'Lab' },
     location: { id: 'loc-1', name: 'Building A' },
     status: 'AVAILABLE', archived_at: null, disabled_at: null,

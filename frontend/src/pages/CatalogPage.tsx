@@ -143,6 +143,7 @@ function CatalogResults({ page, search, filters, setPage, retry }: {
                   <h2>{item.name}</h2>
                   <p className="catalog-card-model">{item.model || 'Model not specified'}</p>
                   <p className="catalog-card-location">{item.location.name}</p>
+                  <p className="catalog-card-owner">Owner: <strong>{item.owner.name}</strong></p>
                   <span className={`equipment-status equipment-status-${item.status.toLowerCase()}`}>{STATUS_LABELS[item.status]}</span>
                   <span className="catalog-card-arrow" aria-hidden="true">↗</span>
                 </div>

@@ -53,3 +53,13 @@ export async function rejectProviderRequest(id: string, reason: string): Promise
   });
   return normalizeRequest(await readJson<RequestWire>(response, 'Unable to reject this request.'));
 }
+
+
+/** Only the equipment provider may record a return and its condition. */
+export async function returnProviderRequest(id: string, condition: string): Promise<ProviderBorrowRequest> {
+  const response = await fetch(`${providerPath}/${encodeURIComponent(id)}/return`, {
+    method: 'POST', credentials: 'include', headers: csrfHeaders(),
+    body: JSON.stringify({ return_condition: condition.trim() }),
+  });
+  return normalizeRequest(await readJson<RequestWire>(response, 'Unable to mark this request as returned.'));
+}

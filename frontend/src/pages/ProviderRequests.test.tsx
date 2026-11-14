@@ -9,7 +9,7 @@ import { ProviderRequestError } from '../types/borrowRequest';
 import type { RegisterResponse } from '../types/auth';
 
 vi.mock('../services/providerRequestsApi', () => ({
-  getProviderRequest: vi.fn(), listProviderRequests: vi.fn(), approveProviderRequest: vi.fn(), rejectProviderRequest: vi.fn(),
+  getProviderRequest: vi.fn(), listProviderRequests: vi.fn(), approveProviderRequest: vi.fn(), rejectProviderRequest: vi.fn(), returnProviderRequest: vi.fn(),
 }));
 
 const provider: RegisterResponse = {
@@ -129,6 +129,31 @@ describe('US5-2 / US5-3 / US5-4 provider decisions', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Approve' }));
     await userEvent.click(screen.getByRole('button', { name: 'Confirm approval' }));
     expect(await screen.findByText('Provider access required')).toBeInTheDocument();
+  });
+
+  it('shows suspended borrower in red in both provider list and detail, and hides Approve', async () => {
+    const suspended = { ...request, borrower: { ...request.borrower, account_status: 'SUSPENDED' as const } };
+    vi.mocked(listProviderRequests).mockResolvedValue({ count: 1, next: null, previous: null, results: [suspended] });
+    vi.mocked(getProviderRequest).mockResolvedValue(suspended);
+    const listView = render(<ProviderRequestsPage user={provider} />);
+    const label = await screen.findByText(/\(suspended\)/);
+    expect(label).toHaveClass('provider-request-borrower-suspended');
+    listView.unmount();
+    render(<ProviderRequestDetailPage user={provider} requestId={request.id} />);
+    expect(await screen.findByText(/\(suspended\)/)).toHaveClass('provider-request-borrower-suspended');
+    expect(screen.queryByRole('button', { name: 'Approve' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Reject' })).toBeInTheDocument();
+  });
+
+  it('refreshes borrower status after an approval is rejected because the account was suspended', async () => {
+    vi.mocked(approveProviderRequest).mockRejectedValueOnce(new ProviderRequestError('Suspended borrowers cannot have requests approved.', 409, 'INVALID_STATE_TRANSITION'));
+    vi.mocked(getProviderRequest).mockResolvedValueOnce(request).mockResolvedValueOnce({ ...request, borrower: { ...request.borrower, account_status: 'SUSPENDED' } });
+    render(<ProviderRequestDetailPage user={provider} requestId={request.id} />);
+    await screen.findByText('Electronics lab project');
+    await userEvent.click(screen.getByRole('button', { name: 'Approve' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Confirm approval' }));
+    expect(await screen.findByText(/\(suspended\)/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Approve' })).not.toBeInTheDocument();
   });
 
   it('refreshes details from API', async () => {

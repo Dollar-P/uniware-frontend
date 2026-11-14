@@ -16,6 +16,7 @@ const user: RegisterResponse = {
 };
 const item: Equipment = {
   id: 'eq-1', asset_id: 'A-1', name: 'Microscope', model: 'MX-5', description: '', provider: 'p1',
+  owner: { name: 'Pat Provider', email: 'pat@chula.ac.th', department: 'Engineering' },
   category: { id: 'cat', name: 'Lab' }, location: { id: 'loc', name: 'Building A' },
   status: 'AVAILABLE', archived_at: null, disabled_at: null, created_at: '', updated_at: '',
 };

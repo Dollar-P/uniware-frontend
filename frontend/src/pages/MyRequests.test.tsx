@@ -12,7 +12,7 @@ import type { RegisterResponse } from '../types/auth';
 
 vi.mock('../services/myRequestsApi', () => ({
   listMyBorrowRequests: vi.fn(), getMyBorrowRequest: vi.fn(),
-  updateMyBorrowRequest: vi.fn(), cancelMyBorrowRequest: vi.fn(),
+  updateMyBorrowRequest: vi.fn(), cancelMyBorrowRequest: vi.fn(), checkoutMyBorrowRequest: vi.fn(),
 }));
 
 const borrower: RegisterResponse = {
@@ -23,6 +23,7 @@ const borrower: RegisterResponse = {
 const equipment: Equipment = {
   id: 'eq-1', asset_id: 'EQ-1001', name: 'Oscilloscope', model: 'DS1054Z',
   description: 'Four-channel digital oscilloscope', provider: 'provider-1',
+  owner: { name: 'Pat Provider', email: 'pat@chula.ac.th', department: 'Engineering' },
   category: { id: 'cat-1', name: 'Electronics' }, location: { id: 'loc-1', name: 'Engineering Lab' },
   status: 'AVAILABLE', archived_at: null, disabled_at: null,
   created_at: '2026-10-01T09:00:00Z', updated_at: '2026-10-01T09:00:00Z',
@@ -58,7 +59,7 @@ describe('US4-3 my borrow requests list', () => {
   it('asks only for the signed-in borrower\'s own requests', async () => {
     render(<MyRequestsPage user={borrower} />);
     await screen.findByRole('heading', { name: 'Oscilloscope' });
-    expect(listMyBorrowRequests).toHaveBeenCalledWith(1);
+    expect(listMyBorrowRequests).toHaveBeenCalledWith(1, 'ALL');
   });
 
   it('shows a loading state before the first response arrives', () => {
@@ -100,7 +101,7 @@ describe('US4-3 my borrow requests list', () => {
     render(<MyRequestsPage user={borrower} />);
     await screen.findByRole('heading', { name: 'Oscilloscope' });
     await userEvent.click(screen.getByRole('button', { name: 'Next' }));
-    await waitFor(() => expect(listMyBorrowRequests).toHaveBeenCalledWith(2));
+    await waitFor(() => expect(listMyBorrowRequests).toHaveBeenCalledWith(2, 'ALL'));
   });
 
   it('does not fetch for a user without the borrower role', () => {

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { providerRequestFixtures } from '../test/fixtures/providerRequests';
 import { ProviderRequestError } from '../types/borrowRequest';
-import { approveProviderRequest, getProviderRequest, listProviderRequests, rejectProviderRequest } from './providerRequestsApi';
+import { approveProviderRequest, getProviderRequest, listProviderRequests, rejectProviderRequest, returnProviderRequest } from './providerRequestsApi';
 
 const fixture = providerRequestFixtures[0];
 
@@ -54,6 +54,18 @@ describe('Provider Requests HTTP contract with Django backend', () => {
       method: 'POST', credentials: 'include',
       headers: { 'Content-Type': 'application/json', 'X-CSRFToken': 'test-csrf-value' },
       body: '{"reason":"Maintenance"}',
+    });
+  });
+
+  it('POSTs a return condition and receives RETURNED status', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(jsonResponse({ ...fixture, status: 'RETURNED', return_condition: 'Intact' }));
+    const result = await returnProviderRequest(fixture.id, ' Intact ');
+    expect(result.status).toBe('RETURNED');
+    expect(result.return_condition).toBe('Intact');
+    expect(fetch).toHaveBeenCalledWith(`/api/provider/requests/${fixture.id}/return`, {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': 'test-csrf-value' },
+      body: '{"return_condition":"Intact"}',
     });
   });
 

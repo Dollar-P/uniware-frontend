@@ -39,3 +39,18 @@
 .provider-request-label { display: block; }
 .provider-request-dialog .provider-request-actions { justify-content: flex-end; }
 @media (max-width: 700px) { .provider-request-card { flex-direction: column; align-items: flex-start; } .provider-request-detail-grid { grid-template-columns: 1fr; } .provider-request-wide { grid-column: auto; } }
+
+.provider-request-borrower-suspended { color: #b91c1c; font-weight: 700; }
+
+.provider-request-card-actions { display: flex; flex-direction: column; align-items: stretch; gap: 9px; min-width: 135px; }
+.provider-request-card-actions .provider-request-button { width: 100%; }
+.provider-request-card-actions .provider-request-error { max-width: 240px; }
+.provider-request-status-returned { color: var(--color-success); }
+@media (max-width: 700px) { .provider-request-card-actions { width: 100%; } }
+
+/* Sorting is performed by Django before pagination, not per visible page. */
+.provider-request-sort-hint {
+  margin: 0.5rem 0 1rem;
+  color: var(--text-secondary, #637083);
+  font-size: 0.875rem;
+}

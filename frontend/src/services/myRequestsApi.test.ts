@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cancelMyBorrowRequest, getMyBorrowRequest, listMyBorrowRequests, updateMyBorrowRequest } from './myRequestsApi';
+import { cancelMyBorrowRequest, checkoutMyBorrowRequest, getMyBorrowRequest, listMyBorrowRequests, updateMyBorrowRequest } from './myRequestsApi';
 import { MyRequestError } from '../types/borrowRequest';
 
 const page = { count: 0, next: null, previous: null, results: [] };
@@ -94,6 +94,25 @@ describe('Borrower request mutations', () => {
     await cancelMyBorrowRequest('req-1');
     expect(fetchMock).toHaveBeenCalledWith('/api/requests/borrow-requests/req-1/cancel/', {
       method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+    });
+  });
+
+  it('POSTs approved-request checkout to the borrower-only action', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ id: 'req-1', status: 'CHECKED_OUT' })));
+    vi.stubGlobal('fetch', fetchMock);
+    const result = await checkoutMyBorrowRequest('req-1');
+    expect(result.status).toBe('CHECKED_OUT');
+    expect(fetchMock).toHaveBeenCalledWith('/api/requests/borrow-requests/req-1/checkout/', {
+      method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' },
+    });
+  });
+
+  it('filters borrower requests on the server before pagination', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(page)));
+    vi.stubGlobal('fetch', fetchMock);
+    await listMyBorrowRequests(3, 'RETURNED');
+    expect(fetchMock).toHaveBeenCalledWith('/api/requests/borrow-requests/mine/?page=3&status=RETURNED', {
+      credentials: 'include', cache: 'no-store',
     });
   });
 

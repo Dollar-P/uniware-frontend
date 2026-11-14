@@ -16,7 +16,8 @@ const borrower: RegisterResponse = {
 };
 const item: Equipment = {
   id: 'eq-1', asset_id: 'ASSET-1', name: 'Microscope', model: 'MX-5', description: 'A lab microscope',
-  provider: 'provider-1', category: { id: 'cat', name: 'Lab' }, location: { id: 'loc', name: 'Building A' },
+  provider: 'provider-1',
+  owner: { name: 'Pat Provider', email: 'pat@chula.ac.th', department: 'Engineering' }, category: { id: 'cat', name: 'Lab' }, location: { id: 'loc', name: 'Building A' },
   status: 'AVAILABLE', archived_at: null, disabled_at: null, created_at: '', updated_at: '',
 };
 const pickup = addDays(toDateInput(new Date()), 1);

@@ -18,6 +18,12 @@ export const STATUS_LABELS: Record<EquipmentStatus, string> = {
 export interface Category { id: string; name: string }
 export interface Location { id: string; name: string }
 
+export interface EquipmentOwner {
+  name: string;
+  email: string;
+  department: string;
+}
+
 export interface Equipment {
   id: string;
   asset_id: string;
@@ -25,6 +31,7 @@ export interface Equipment {
   model: string;
   description: string;
   provider: string;
+  owner: EquipmentOwner;
   category: Category;
   location: Location;
   status: EquipmentStatus;

@@ -2,7 +2,14 @@ import type { Equipment, Paginated } from './equipment';
 
 /** Shared fields are derived from apps/requests/serializers.py in the backend branch. */
 export type BorrowRequestStatus =
-  | 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED' | 'CHECKED_OUT' | 'COMPLETED';
+  | 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED' | 'CHECKED_OUT' | 'RETURNED' | 'COMPLETED';
+
+export type RequestFilter = 'ALL' | 'PENDING' | 'APPROVED' | 'CHECKED_OUT' | 'RETURNED' | 'REJECTED';
+export const REQUEST_FILTER_OPTIONS: { value: RequestFilter; label: string }[] = [
+  { value: 'ALL', label: 'All' }, { value: 'PENDING', label: 'Pending' },
+  { value: 'APPROVED', label: 'Approved' }, { value: 'CHECKED_OUT', label: 'Checked Out' },
+  { value: 'RETURNED', label: 'Returned' }, { value: 'REJECTED', label: 'Rejected' },
+];
 
 export interface BorrowerInfo {
   id: string;
@@ -10,6 +17,7 @@ export interface BorrowerInfo {
   last_name?: string;
   email?: string;
   department?: string;
+  account_status?: 'ACTIVE' | 'SUSPENDED';
 }
 
 export interface ProviderBorrowRequest {
@@ -23,6 +31,8 @@ export interface ProviderBorrowRequest {
   decision_reason: string;
   decided_by: string | null;
   decided_at: string | null;
+  return_condition?: string;
+  returned_at?: string | null;
 }
 
 export type ProviderRequestPage = Paginated<ProviderBorrowRequest>;
@@ -71,6 +81,8 @@ export interface MyBorrowRequest {
   decision_reason: string;
   decided_by: string | null;
   decided_at: string | null;
+  return_condition?: string;
+  returned_at?: string | null;
 }
 
 export type MyBorrowRequestPage = Paginated<MyBorrowRequest>;
@@ -82,6 +94,7 @@ export const MY_REQUEST_STATUS_HELP: Record<BorrowRequestStatus, string> = {
   REJECTED: 'The provider turned this request down.',
   CANCELLED: 'This request was withdrawn.',
   CHECKED_OUT: 'You have the equipment right now.',
+  RETURNED: 'Returned to the provider. See the return condition in request details.',
   COMPLETED: 'Returned and closed.',
 };
 

@@ -28,3 +28,13 @@ body { margin: 0; min-width: 320px; min-height: 100vh; color: var(--color-text);
 button, input { font: inherit; font-optical-sizing: inherit; font-variation-settings: inherit; }
 button, input, a { -webkit-tap-highlight-color: transparent; }
 ::selection { background: var(--color-primary); color: var(--color-surface); }
+
+.catalog-header,
+.equipment-page-header,
+.provider-request-header,
+.profile-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--color-surface);
+}

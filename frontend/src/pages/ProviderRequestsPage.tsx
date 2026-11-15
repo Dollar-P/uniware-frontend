@@ -89,6 +89,6 @@ export default function ProviderRequestsPage({ user }: { user: RegisterResponse 
 export function ProviderHeader() {
   return <header className="provider-request-header">
     <img src={uniwareLogo} alt="UniWare" className="uniware-logo" />
-    <nav aria-label="Provider navigation"><a href="#account">Your account</a><a href="#my-equipment">My equipment</a><a href="#provider-requests">Requests</a></nav>
+    <nav aria-label="Provider navigation"><a href="#account">Your account</a><a href="#my-equipment">My equipment</a><a href="#provider-requests">Requests</a><a href="#provider-returns">Returns</a></nav>
   </header>;
 }

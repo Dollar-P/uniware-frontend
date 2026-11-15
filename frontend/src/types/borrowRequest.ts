@@ -23,6 +23,8 @@ export interface ProviderBorrowRequest {
   decision_reason: string;
   decided_by: string | null;
   decided_at: string | null;
+  /** US7-1: server timestamp set when the provider confirms the return (CHECKED_OUT → COMPLETED). */
+  returned_at?: string | null;
 }
 
 export type ProviderRequestPage = Paginated<ProviderBorrowRequest>;
@@ -71,6 +73,7 @@ export interface MyBorrowRequest {
   decision_reason: string;
   decided_by: string | null;
   decided_at: string | null;
+  returned_at?: string | null;
 }
 
 export type MyBorrowRequestPage = Paginated<MyBorrowRequest>;

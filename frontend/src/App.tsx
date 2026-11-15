@@ -8,15 +8,25 @@ import ProviderRequestsPage from './pages/ProviderRequestsPage';
 import ProviderRequestDetailPage from './pages/ProviderRequestDetailPage';
 import MyRequestsPage from './pages/MyRequestsPage';
 import MyRequestDetailPage from './pages/MyRequestDetailPage';
+import ProviderReturnsPage from './pages/ProviderReturnsPage';
+import MyLoansPage from './pages/MyLoansPage';
 import { currentUser, logout } from './services/sessionApi';
 import type { RegisterResponse } from './types/auth';
 import uniwareLogo from './assets/brand/uniware-logo.svg';
 
-type Route = 'profile' | 'signup' | 'login' | 'account' | 'my-equipment' | 'catalog' | 'provider-requests' | 'my-requests' | `provider-requests/${string}` | `my-requests/${string}` | `equipment/${string}`;
+type Route = 'profile' | 'signup' | 'login' | 'account' | 'my-equipment' | 'catalog' | 'provider-requests' | 'provider-returns' | 'my-requests' | 'my-loans' | `provider-requests/${string}` | `my-requests/${string}` | `equipment/${string}`;
+/** Routes that need a signed-in user: a signed-out visitor is sent to login. */
+function isAuthenticatedRoute(route: Route): boolean {
+  return route === 'profile' || route === 'account' || route === 'catalog' || route === 'my-equipment'
+    || route === 'provider-requests' || route === 'provider-returns' || route === 'my-requests' || route === 'my-loans'
+    || route.startsWith('provider-requests/') || route.startsWith('my-requests/') || route.startsWith('equipment/');
+}
 function readRoute(): Route {
   if (window.location.hash === '#profile') return 'profile';
   if (window.location.hash === '#catalog') return 'catalog';
   if (window.location.hash === '#provider-requests') return 'provider-requests';
+  if (window.location.hash === '#provider-returns') return 'provider-returns';
+  if (window.location.hash === '#my-loans') return 'my-loans';
   if (window.location.hash.startsWith('#provider-requests/')) return window.location.hash.slice(1) as Route;
   if (window.location.hash === '#my-requests') return 'my-requests';
   if (window.location.hash.startsWith('#my-requests/')) return window.location.hash.slice(1) as Route;
@@ -77,7 +87,7 @@ function App() {
         setUser(account);
         // 'my-equipment' is an authenticated route like 'account': a signed-in user
         // stays put, and a signed-out one is sent to login.
-        const authenticatedRoute = route === 'profile' || route === 'account' || route === 'catalog' || route === 'my-equipment' || route === 'provider-requests' || route === 'my-requests' || route.startsWith('provider-requests/') || route.startsWith('my-requests/') || route.startsWith('equipment/');
+        const authenticatedRoute = isAuthenticatedRoute(route);
         if (account && !authenticatedRoute) window.location.hash = 'account';
         if (!account && authenticatedRoute) window.location.hash = 'login';
       } catch {
@@ -98,7 +108,7 @@ function App() {
     return () => { active = false; window.removeEventListener('focus', recheckOnFocus); };
   }, [route, attempt]);
   useEffect(() => {
-    document.title = `${route === 'profile' ? 'Your profile' : route === 'login' ? 'Sign in' : route === 'account' ? 'Your account' : route === 'catalog' ? 'Equipment catalog' : route === 'my-equipment' ? 'My equipment' : route.startsWith('provider-requests/') ? 'Request details' : route === 'provider-requests' ? 'Borrow requests' : route.startsWith('my-requests/') ? 'Request details' : route === 'my-requests' ? 'My borrow requests' : route.startsWith('equipment/') ? 'Equipment details' : 'Sign up'} · UniWare`;
+    document.title = `${route === 'profile' ? 'Your profile' : route === 'login' ? 'Sign in' : route === 'account' ? 'Your account' : route === 'catalog' ? 'Equipment catalog' : route === 'my-equipment' ? 'My equipment' : route.startsWith('provider-requests/') ? 'Request details' : route === 'provider-requests' ? 'Borrow requests' : route === 'provider-returns' ? 'Return queue' : route === 'my-loans' ? 'My active loans' : route.startsWith('my-requests/') ? 'Request details' : route === 'my-requests' ? 'My borrow requests' : route.startsWith('equipment/') ? 'Equipment details' : 'Sign up'} · UniWare`;
   }, [route]);
   // EPIC2: the provider surfaces need a signed-in user, so they render only once the
   // session check has resolved.
@@ -124,6 +134,14 @@ function App() {
     try { id = decodeURIComponent(route.slice('provider-requests/'.length)); } catch { /* Invalid IDs show not found. */ }
     return <ProviderRequestDetailPage key={id} user={user} requestId={id} />;
   }
+  // US7-1: provider's active loans awaiting return.
+  if (route === 'provider-returns' && !checking && user) {
+    return <ProviderReturnsPage user={user} />;
+  }
+  // US8-1: borrower's own active loans and due dates.
+  if (route === 'my-loans' && !checking && user) {
+    return <MyLoansPage user={user} />;
+  }
   // US4-3: the borrower's own requests, scoped server-side to the signed-in user.
   if (route === 'my-requests' && !checking && user) {
     return <MyRequestsPage user={user} />;
@@ -133,7 +151,7 @@ function App() {
     try { id = decodeURIComponent(route.slice('my-requests/'.length)); } catch { /* Invalid IDs show not found. */ }
     return <MyRequestDetailPage key={id} user={user} requestId={id} />;
   }
-  if (checking || route === 'profile' || route === 'account' || route === 'catalog' || route === 'my-equipment' || route === 'provider-requests' || route === 'my-requests' || route.startsWith('provider-requests/') || route.startsWith('my-requests/') || route.startsWith('equipment/')) {
+  if (checking || isAuthenticatedRoute(route)) {
     return (
       <main className="account-page">
         <img className="uniware-logo" src={uniwareLogo} alt="UniWare" />
@@ -158,12 +176,16 @@ function App() {
               <a className="register-button account-action-link" href="#profile">View and edit profile</a>
               <a className="register-button account-action-link" href="#catalog">Browse equipment</a>
               {user.is_borrower && (
-                <a className="register-button account-action-link" href="#my-requests">My borrow requests</a>
+                <>
+                  <a className="register-button account-action-link" href="#my-requests">My borrow requests</a>
+                  <a className="register-button account-action-link" href="#my-loans">My active loans</a>
+                </>
               )}
               {user.is_provider && (
                 <>
                   <a className="register-button account-action-link" href="#my-equipment">Manage my equipment</a>
                   <a className="register-button account-action-link" href="#provider-requests">View borrow requests</a>
+                  <a className="register-button account-action-link" href="#provider-returns">Return queue</a>
                 </>
               )}
               {logoutError && <p className="form-message form-message-error" role="alert">{logoutError}</p>}

@@ -38,6 +38,16 @@ export async function listMyBorrowRequests(page = 1): Promise<MyBorrowRequestPag
   return normalizePage(await readJson<MyBorrowRequestPage | MyBorrowRequest[]>(response, 'Unable to load your borrow requests. Please try again.'));
 }
 
+/** US8-1: the signed-in borrower's active loans (CHECKED_OUT). The server applies both the
+ *  ownership scope and the status filter; completed loans and other users' loans never arrive. */
+export async function listMyActiveLoans(page = 1): Promise<MyBorrowRequestPage> {
+  const response = await fetch(`${requestsPath}/mine/?page=${page}&status=CHECKED_OUT`, {
+    credentials: 'include',
+    cache: 'no-store',
+  });
+  return normalizePage(await readJson<MyBorrowRequestPage | MyBorrowRequest[]>(response, 'Unable to load your active loans. Please try again.'));
+}
+
 /** US4-3: one of the borrower's own requests. Another borrower's id is scoped out of the
  *  queryset server-side and comes back 404, so the UI must not treat it as a crash. */
 export async function getMyBorrowRequest(id: string): Promise<MyBorrowRequest> {

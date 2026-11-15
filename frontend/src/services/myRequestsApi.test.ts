@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cancelMyBorrowRequest, getMyBorrowRequest, listMyBorrowRequests, updateMyBorrowRequest } from './myRequestsApi';
+import { cancelMyBorrowRequest, getMyBorrowRequest, listMyActiveLoans, listMyBorrowRequests, updateMyBorrowRequest } from './myRequestsApi';
 import { MyRequestError } from '../types/borrowRequest';
 
 const page = { count: 0, next: null, previous: null, results: [] };
@@ -23,6 +23,16 @@ describe('US4-3 my borrow requests API', () => {
     const [url] = fetchMock.mock.calls[0];
     expect(url).toBe('/api/requests/borrow-requests/mine/?page=1');
     expect(url).not.toMatch(/borrower/);
+  });
+
+  it('US8-1: asks /mine for CHECKED_OUT loans only, without a borrower id', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(page)));
+    vi.stubGlobal('fetch', fetchMock);
+    await listMyActiveLoans(3);
+    expect(fetchMock).toHaveBeenCalledWith('/api/requests/borrow-requests/mine/?page=3&status=CHECKED_OUT', {
+      credentials: 'include', cache: 'no-store',
+    });
+    expect(fetchMock.mock.calls[0][0]).not.toMatch(/borrower/);
   });
 
   it('accepts a bare list as well as a DRF page', async () => {

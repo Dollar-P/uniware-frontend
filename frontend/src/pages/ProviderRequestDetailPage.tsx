@@ -4,7 +4,10 @@ import ConfirmReturnDialog from '../components/requests/ConfirmReturnDialog';
 import LoanDueBadge from '../components/requests/LoanDueBadge';
 import RejectRequestDialog from '../components/requests/RejectRequestDialog';
 import RequestStatusBadge from '../components/requests/RequestStatusBadge';
-import { approveProviderRequest, confirmProviderReturn, getProviderRequest, rejectProviderRequest } from '../services/providerRequestsApi';
+import SuspensionNotice from '../components/equipment/SuspensionNotice';
+import BorrowerName from '../components/requests/BorrowerName';
+import ReturnConditionDialog from '../components/requests/ReturnConditionDialog';
+import { approveProviderRequest, confirmProviderReturn, rejectProviderRequest, getProviderRequest, rejectProviderRequest } from '../services/providerRequestsApi';
 import { borrowerLabel, dateLabel, ProviderRequestError } from '../types/borrowRequest';
 import type { ProviderBorrowRequest } from '../types/borrowRequest';
 import type { RegisterResponse } from '../types/auth';
@@ -32,6 +35,7 @@ export default function ProviderRequestDetailPage({ user, requestId }: { user: R
   const [decision, setDecision] = useState<Decision>(null);
   const [decisionBusy, setDecisionBusy] = useState(false);
   const [decisionError, setDecisionError] = useState('');
+  const [returnOpen, setReturnOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -64,7 +68,7 @@ export default function ProviderRequestDetailPage({ user, requestId }: { user: R
   }
 
   async function decide(action: Exclude<Decision, null>, reason?: string) {
-    if (!request || request.status !== REQUIRED_STATUS[action] || decisionBusy) return;
+    if (!request || request.status !== REQUIRED_STATUS[action] || decisionBusy || request.equipment.is_suspended) return;
     setDecisionBusy(true);
     setDecisionError('');
     try {
@@ -98,6 +102,28 @@ export default function ProviderRequestDetailPage({ user, requestId }: { user: R
     }
   }
 
+  async function markReturned(condition: string) {
+    if (!request || request.status !== 'CHECKED_OUT' || decisionBusy) return;
+    setDecisionBusy(true);
+    setDecisionError('');
+    setError('');
+    try {
+      setRequest(await returnProviderRequest(request.id, condition));
+      setReturnOpen(false);
+      setSuccess('Equipment marked returned. The return condition is now visible to the borrower.');
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message : 'Unable to record return.';
+      if (cause instanceof ProviderRequestError && [401, 403].includes(cause.status)) {
+        setReturnOpen(false);
+        setDenied(true);
+      } else if (cause instanceof ProviderRequestError && cause.status === 409) {
+        setReturnOpen(false);
+        setError(message);
+        try { setRequest(await getProviderRequest(requestId)); } catch { /* user can refresh */ }
+      } else setDecisionError(message);
+    } finally { setDecisionBusy(false); }
+  }
+
   if (!canView || denied) return (
     <main className="provider-request-page"><ProviderHeader />
       <section className="provider-request-panel"><h1>Provider access required</h1>
@@ -121,30 +147,46 @@ export default function ProviderRequestDetailPage({ user, requestId }: { user: R
           <dl className="provider-request-detail-grid">
             <div><dt>Equipment</dt><dd>{request.equipment.name}</dd></div>
             <div><dt>Asset ID</dt><dd>{request.equipment.asset_id}</dd></div>
-            <div><dt>Borrower</dt><dd>{borrowerLabel(request.borrower)}</dd></div>
+            <div><dt>Borrower</dt><dd><BorrowerName borrower={request.borrower} /></dd></div>
             {request.borrower.email && <div><dt>Borrower email</dt><dd>{request.borrower.email}</dd></div>}
             <div><dt>Pickup date</dt><dd>{dateLabel(request.pickup_date)}</dd></div>
             <div><dt>Return by (exclusive due date)</dt><dd>{dateLabel(request.due_date)}
               {request.status === 'CHECKED_OUT' && <> <LoanDueBadge dueDate={request.due_date} /></>}</dd></div>
             <div className="provider-request-wide"><dt>Purpose</dt><dd>{request.purpose}</dd></div>
+            {request.return_condition && (
+              <div className="provider-request-wide"><dt>Equipment condition on return</dt><dd>{request.return_condition}</dd></div>
+            )}
+            {request.returned_at && (
+              <div><dt>Returned on</dt><dd>{new Date(request.returned_at).toLocaleString('en-GB')}</dd></div>
+            )}
             {request.decision_reason && <div className="provider-request-wide"><dt>Decision reason</dt><dd>{request.decision_reason}</dd></div>}
             {request.returned_at && <div><dt>Returned on</dt><dd>{new Date(request.returned_at).toLocaleString('en-GB')}</dd></div>}
           </dl>
+          <SuspensionNotice equipment={request.equipment} />
+          {request.status === 'PENDING' && request.borrower.account_status === 'SUSPENDED' && (
+            <p className="provider-request-error" role="status">Approval is unavailable while the borrower account is suspended.</p>
+          )}
           {request.status === 'PENDING' && (
             <div className="provider-request-actions" aria-label="Request decision actions">
-              <button type="button" className="provider-request-button provider-request-button-primary" disabled={decisionBusy} onClick={() => openDecision('approve')}>Approve</button>
+              {request.borrower.account_status !== 'SUSPENDED' && !request.equipment.is_suspended && (
+                <button type="button" className="provider-request-button provider-request-button-primary" disabled={decisionBusy} onClick={() => openDecision('approve')}>Approve</button>
+              )}
               <button type="button" className="provider-request-button provider-request-button-danger" disabled={decisionBusy} onClick={() => openDecision('reject')}>Reject</button>
             </div>
           )}
           {request.status === 'CHECKED_OUT' && (
             <div className="provider-request-actions" aria-label="Loan return actions">
-              <button type="button" className="provider-request-button provider-request-button-primary" disabled={decisionBusy} onClick={() => openDecision('return')}>Confirm return</button>
+              <button type="button" className="provider-request-button provider-request-button-primary provider-request-button-refresh" disabled={decisionBusy} onClick={() => openDecision('return')}>Confirm return</button>
             </div>
           )}
           <button type="button" className="provider-request-button provider-request-button-refresh" disabled={loading || decisionBusy} onClick={() => void load()}>Refresh status</button>
         </>}
       </section>
-      {decision === 'approve' && request?.status === 'PENDING' && (
+      {returnOpen && request?.status === 'CHECKED_OUT' && (
+        <ReturnConditionDialog busy={decisionBusy} error={decisionError} onCancel={() => setReturnOpen(false)}
+          onConfirm={condition => void markReturned(condition)} />
+      )}
+      {decision === 'approve' && request?.status === 'PENDING' && request.borrower.account_status !== 'SUSPENDED' && !request.equipment.is_suspended && (
         <ApproveConfirmDialog busy={decisionBusy} error={decisionError} onCancel={() => setDecision(null)} onConfirm={() => void decide('approve')} />
       )}
       {decision === 'reject' && request?.status === 'PENDING' && (

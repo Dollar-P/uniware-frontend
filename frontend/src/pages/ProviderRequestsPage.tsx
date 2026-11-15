@@ -1,17 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
 import RequestCard from '../components/requests/RequestCard';
 import { listProviderRequests } from '../services/providerRequestsApi';
-import { ProviderRequestError } from '../types/borrowRequest';
-import type { ProviderBorrowRequest } from '../types/borrowRequest';
+import { ProviderRequestError, REQUEST_FILTER_OPTIONS } from '../types/borrowRequest';
+import type { ProviderBorrowRequest, RequestFilter } from '../types/borrowRequest';
 import type { RegisterResponse } from '../types/auth';
 import uniwareLogo from '../assets/brand/uniware-logo.svg';
 import './ProviderRequests.css';
 
-type Filter = 'PENDING' | 'ALL';
 
 export default function ProviderRequestsPage({ user }: { user: RegisterResponse }) {
   const canManage = user.is_provider && user.account_status === 'ACTIVE';
-  const [filter, setFilter] = useState<Filter>('PENDING');
+  const [filter, setFilter] = useState<RequestFilter>('PENDING');
   const [page, setPage] = useState(1);
   const [requests, setRequests] = useState<ProviderBorrowRequest[]>([]);
   const [count, setCount] = useState(0);
@@ -20,7 +19,7 @@ export default function ProviderRequestsPage({ user }: { user: RegisterResponse 
   const [error, setError] = useState('');
   const [denied, setDenied] = useState(false);
 
-  const load = useCallback(async (targetPage: number, targetFilter: Filter) => {
+  const load = useCallback(async (targetPage: number, targetFilter: RequestFilter) => {
     setLoading(true);
     setError('');
     try {
@@ -63,17 +62,22 @@ export default function ProviderRequestsPage({ user }: { user: RegisterResponse 
           <span>{count} request{count === 1 ? '' : 's'}</span>
         </header>
         <div className="provider-request-tabs" role="group" aria-label="Filter requests">
-          <button type="button" aria-pressed={filter === 'PENDING'} onClick={() => { setPage(1); setFilter('PENDING'); }}>Pending</button>
-          <button type="button" aria-pressed={filter === 'ALL'} onClick={() => { setPage(1); setFilter('ALL'); }}>All</button>
+          {REQUEST_FILTER_OPTIONS.map(option => (
+            <button key={option.value} type="button" aria-pressed={filter === option.value}
+              onClick={() => { setPage(1); setFilter(option.value); }}>{option.label}</button>
+          ))}
           <button type="button" className="provider-request-refresh" disabled={loading} onClick={() => void load(page, filter)}>Refresh</button>
         </div>
+        <p className="provider-request-sort-hint">
+          Sorted by {filter === 'CHECKED_OUT' || filter === 'RETURNED' ? 'return date' : 'pickup date'} (earliest first)
+        </p>
         {loading ? <p role="status">Loading requests...</p> : error ? (
           <div><p role="alert" className="provider-request-error">{error}</p>
             <button className="provider-request-button" onClick={() => void load(page, filter)}>Try again</button></div>
         ) : requests.length === 0 ? (
-          <div className="provider-request-empty"><h2>No {filter === 'PENDING' ? 'pending ' : ''}requests</h2>
+          <div className="provider-request-empty"><h2>No {filter === 'ALL' ? '' : `${filter.toLowerCase().replaceAll('_', ' ')} `}requests</h2>
             <p>New requests for your equipment will appear here.</p></div>
-        ) : <ul className="provider-request-list">{requests.map(request => <RequestCard key={request.id} request={request} />)}</ul>}
+        ) : <ul className="provider-request-list">{requests.map(request => <RequestCard key={request.id} request={request} onReturned={() => load(page, filter)} />)}</ul>}
         {(page > 1 || hasNext) && !loading && !error && (
           <nav className="provider-request-pagination" aria-label="Request pages">
             <button type="button" disabled={page <= 1} onClick={() => setPage(value => value - 1)}>Previous</button>

@@ -18,9 +18,10 @@ function makeEquipment(overrides: Partial<Equipment> = {}): Equipment {
   return {
     id: 'eq-1', asset_id: 'AST-001', name: 'Microscope', model: 'MX-5', description: 'Lab scope',
     provider: 'user-1',
+  owner: { name: 'Pat Provider', email: 'pat@chula.ac.th', department: 'Engineering' },
     category: { id: 'cat-1', name: 'Lab' },
     location: { id: 'loc-1', name: 'Building A' },
-    status: 'AVAILABLE', archived_at: null, disabled_at: null,
+    status: 'AVAILABLE', admin_suspended: false, is_suspended: false, suspension_reason: '', archived_at: null, disabled_at: null,
     created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z',
     ...overrides,
   };

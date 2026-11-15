@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import RequestStatusBadge from '../components/requests/RequestStatusBadge';
+import SuspensionNotice from '../components/equipment/SuspensionNotice';
 import BorrowerRequestActions from '../components/requests/BorrowerRequestActions';
+import { checkoutMyBorrowRequest, getMyBorrowRequest } from '../services/myRequestsApi';
 import LoanDueBadge from '../components/requests/LoanDueBadge';
-import { getMyBorrowRequest } from '../services/myRequestsApi';
 import { dateLabel, MY_REQUEST_STATUS_HELP, MyRequestError } from '../types/borrowRequest';
 import type { MyBorrowRequest } from '../types/borrowRequest';
 import type { RegisterResponse } from '../types/auth';
@@ -20,6 +21,8 @@ export default function MyRequestDetailPage({ user, requestId }: { user: Registe
   const [loading, setLoading] = useState(canBorrow);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [checkoutBusy, setCheckoutBusy] = useState(false);
+  const [checkoutError, setCheckoutError] = useState('');
   const [missing, setMissing] = useState(false);
   const [denied, setDenied] = useState(false);
 
@@ -45,6 +48,18 @@ export default function MyRequestDetailPage({ user, requestId }: { user: Registe
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
   }, [canBorrow, load]);
+
+  async function checkout() {
+    if (!request || request.status !== 'APPROVED' || request.equipment.is_suspended) return;
+    setCheckoutBusy(true);
+    setCheckoutError('');
+    setSuccess('');
+    try {
+      setRequest(await checkoutMyBorrowRequest(request.id));
+      setSuccess('Equipment checked out successfully.');
+    } catch (cause) { setCheckoutError(cause instanceof Error ? cause.message : 'Unable to check out.'); }
+    finally { setCheckoutBusy(false); }
+  }
 
   if (!canBorrow || denied) return (
     <main className="provider-request-page"><MyRequestsHeader />
@@ -73,6 +88,7 @@ export default function MyRequestDetailPage({ user, requestId }: { user: Registe
               <RequestStatusBadge status={request.status} />
             </div>
             <p className="my-request-status-help">{MY_REQUEST_STATUS_HELP[request.status]}</p>
+            <SuspensionNotice equipment={request.equipment} />
             <dl className="provider-request-detail-grid">
               <div><dt>Asset ID</dt><dd>{request.equipment.asset_id}</dd></div>
               <div><dt>Model</dt><dd>{request.equipment.model || 'Not specified'}</dd></div>
@@ -92,11 +108,24 @@ export default function MyRequestDetailPage({ user, requestId }: { user: Registe
               {request.decision_reason && (
                 <div className="provider-request-wide"><dt>Reason given by the provider</dt><dd>{request.decision_reason}</dd></div>
               )}
+              {request.return_condition && (
+                <div className="provider-request-wide"><dt>Equipment condition on return</dt><dd>{request.return_condition}</dd></div>
+              )}
+              {request.returned_at && (
+                <div><dt>Returned on</dt><dd>{new Date(request.returned_at).toLocaleString('en-GB')}</dd></div>
+              )}
               {request.decided_at && (
                 <div><dt>Decided on</dt><dd>{new Date(request.decided_at).toLocaleString('en-GB')}</dd></div>
               )}
             </dl>
             {success && <p role="status" className="provider-request-success">{success}</p>}
+            {checkoutError && <p role="alert" className="provider-request-error">{checkoutError}</p>}
+            {request.status === 'APPROVED' && !request.equipment.is_suspended && (
+              <button type="button" className="provider-request-button provider-request-button-primary provider-request-button-refresh"
+                disabled={checkoutBusy} onClick={() => void checkout()}>
+                {checkoutBusy ? 'Checking out...' : 'Check out'}
+              </button>
+            )}
             <BorrowerRequestActions key={[request.id, request.status, request.pickup_date, request.due_date, request.purpose].join(':')} request={request} onChanged={(updated, message) => {
               setRequest(updated);
               setSuccess(message);

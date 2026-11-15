@@ -62,6 +62,9 @@ function BorrowAction({ equipment, user }: { equipment: Equipment; user?: Regist
   const [submitted, setSubmitted] = useState<BorrowRequest | null>(null);
   // The backend enforces these too; hiding the action just avoids a request that must fail.
   if (!user?.is_borrower || equipment.provider === user.id) return null;
+  if (equipment.is_suspended) {
+    return <div className="equipment-borrow"><p className="equipment-borrow-note">Borrow requests are unavailable while equipment is suspended.</p></div>;
+  }
   if (!REQUESTABLE_STATUSES.includes(equipment.status)) {
     return <div className="equipment-borrow"><p className="equipment-borrow-note">
       This equipment cannot be requested while its status is {STATUS_LABELS[equipment.status].toLowerCase()}.

@@ -8,19 +8,24 @@ import ProviderRequestsPage from './pages/ProviderRequestsPage';
 import ProviderRequestDetailPage from './pages/ProviderRequestDetailPage';
 import MyRequestsPage from './pages/MyRequestsPage';
 import MyRequestDetailPage from './pages/MyRequestDetailPage';
+import UserManagementPage from './pages/UserManagementPage';
+import AdminEquipmentPage from './pages/AdminEquipmentPage';
+import NotificationsPanel from './components/equipment/NotificationsPanel';
 import ProviderReturnsPage from './pages/ProviderReturnsPage';
 import MyLoansPage from './pages/MyLoansPage';
 import { currentUser, logout } from './services/sessionApi';
 import type { RegisterResponse } from './types/auth';
 import uniwareLogo from './assets/brand/uniware-logo.svg';
 
-type Route = 'profile' | 'signup' | 'login' | 'account' | 'my-equipment' | 'catalog' | 'provider-requests' | 'provider-returns' | 'my-requests' | 'my-loans' | `provider-requests/${string}` | `my-requests/${string}` | `equipment/${string}`;
+
+type Route = 'profile' | 'signup' | 'login' | 'account' | 'my-equipment' | 'catalog' | 'user-management' | 'admin-equipment' | 'provider-requests' | 'provider-returns' | 'my-requests' | 'my-loans' | `provider-requests/${string}` | `my-requests/${string}` | `equipment/${string}`;
 /** Routes that need a signed-in user: a signed-out visitor is sent to login. */
 function isAuthenticatedRoute(route: Route): boolean {
   return route === 'profile' || route === 'account' || route === 'catalog' || route === 'my-equipment'
     || route === 'provider-requests' || route === 'provider-returns' || route === 'my-requests' || route === 'my-loans'
     || route.startsWith('provider-requests/') || route.startsWith('my-requests/') || route.startsWith('equipment/');
 }
+
 function readRoute(): Route {
   if (window.location.hash === '#profile') return 'profile';
   if (window.location.hash === '#catalog') return 'catalog';
@@ -32,6 +37,8 @@ function readRoute(): Route {
   if (window.location.hash.startsWith('#my-requests/')) return window.location.hash.slice(1) as Route;
   if (window.location.hash.startsWith('#equipment/')) return window.location.hash.slice(1) as Route;
   if (window.location.hash === '#my-equipment') return 'my-equipment';
+  if (window.location.hash === '#user-management') return 'user-management';
+  if (window.location.hash === '#admin-equipment') return 'admin-equipment';
   return window.location.hash === '#login' ? 'login' : window.location.hash === '#account' ? 'account' : 'signup';
 }
 function App() {
@@ -108,7 +115,32 @@ function App() {
     return () => { active = false; window.removeEventListener('focus', recheckOnFocus); };
   }, [route, attempt]);
   useEffect(() => {
-    document.title = `${route === 'profile' ? 'Your profile' : route === 'login' ? 'Sign in' : route === 'account' ? 'Your account' : route === 'catalog' ? 'Equipment catalog' : route === 'my-equipment' ? 'My equipment' : route.startsWith('provider-requests/') ? 'Request details' : route === 'provider-requests' ? 'Borrow requests' : route === 'provider-returns' ? 'Return queue' : route === 'my-loans' ? 'My active loans' : route.startsWith('my-requests/') ? 'Request details' : route === 'my-requests' ? 'My borrow requests' : route.startsWith('equipment/') ? 'Equipment details' : 'Sign up'} · UniWare`;
+    const exactTitles = {
+      profile: 'Your profile',
+      login: 'Sign in',
+      account: 'Your account',
+      catalog: 'Equipment catalog',
+      'my-equipment': 'My equipment',
+      'user-management': 'User management',
+      'admin-equipment': 'Equipment suspension',
+      'provider-requests': 'Borrow requests',
+      'provider-returns': 'Return queue',
+      'my-loans': 'My active loans',
+      'my-requests': 'My borrow requests',
+    };
+
+    const prefixTitles = [
+      ['provider-requests/', 'Request details'],
+      ['my-requests/', 'Request details'],
+      ['equipment/', 'Equipment details'],
+    ];
+
+    const pageTitle =
+      exactTitles[route] ??
+      prefixTitles.find(([prefix]) => route.startsWith(prefix))?.[1] ??
+      'Sign up';
+
+    document.title = `${pageTitle} · UniWare`;
   }, [route]);
   // EPIC2: the provider surfaces need a signed-in user, so they render only once the
   // session check has resolved.
@@ -125,6 +157,13 @@ function App() {
   }
   if (route === 'my-equipment' && !checking && user) {
     return <MyEquipmentPage user={user} />;
+  }
+  if (route === 'admin-equipment' && !checking && user?.is_admin) return <AdminEquipmentPage />;
+  if (route === 'user-management' && !checking && user?.is_admin) {
+    return <UserManagementPage user={user} />;
+  }
+  if ((route === 'user-management' || route === 'admin-equipment') && !checking && user && !user.is_admin) {
+    return <main className="account-page"><section className="account-content"><h1>Admin access required</h1><p>This page is only available to administrator accounts.</p><a className="register-button account-action-link" href="#account">Back to your account</a></section></main>;
   }
   if (route === 'provider-requests' && !checking && user) {
     return <ProviderRequestsPage user={user} />;
@@ -188,6 +227,11 @@ function App() {
                   <a className="register-button account-action-link" href="#provider-returns">Return queue</a>
                 </>
               )}
+              {user.is_admin && <>
+                <a className="register-button account-action-link" href="#user-management">User management</a>
+                <a className="register-button account-action-link" href="#admin-equipment">Equipment suspension</a>
+              </>}
+              <NotificationsPanel />
               {logoutError && <p className="form-message form-message-error" role="alert">{logoutError}</p>}
               <button className="register-button logout-button" onClick={handleLogout} disabled={loggingOut}>
                 {loggingOut ? 'Logging out...' : 'Log out'}

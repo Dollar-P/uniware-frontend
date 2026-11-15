@@ -145,6 +145,10 @@ export default function MyEquipmentPage({ user }: { user: RegisterResponse }) {
                   key={item.id}
                   equipment={item}
                   onEdit={target => { setNotice(''); setMode({ kind: 'edit', equipment: target }); }}
+                  onArchived={saved => {
+                    setEquipment(current => current.map(item => item.id === saved.id ? saved : item));
+                    setNotice(`${saved.name} was archived and is no longer visible to borrowers.`);
+                  }}
                 />
               ))}
             </ul>

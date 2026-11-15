@@ -1,10 +1,12 @@
 import { STATUS_LABELS } from '../../types/equipment';
 import type { Equipment } from '../../types/equipment';
+import ArchiveEquipmentAction from './ArchiveEquipmentAction';
 
 /** Shared list row for US2-2 (provider inventory) and, later, the US3-1 catalog. */
-export default function EquipmentCard({ equipment, onEdit }: {
+export default function EquipmentCard({ equipment, onEdit, onArchived }: {
   equipment: Equipment;
   onEdit?: (equipment: Equipment) => void;
+  onArchived?: (equipment: Equipment) => void;
 }) {
   return (
     <li className="equipment-card">
@@ -21,12 +23,15 @@ export default function EquipmentCard({ equipment, onEdit }: {
         <span className={`equipment-status equipment-status-${equipment.status.toLowerCase()}`}>
           {STATUS_LABELS[equipment.status]}
         </span>
-        {onEdit && (
+        {onEdit && equipment.status !== 'ARCHIVED' && (
           <button className="register-button button-secondary" type="button" onClick={() => onEdit(equipment)}>
             Edit
           </button>
         )}
       </div>
+      {onArchived && equipment.status !== 'ARCHIVED' && (
+        <ArchiveEquipmentAction equipment={equipment} onArchived={onArchived} />
+      )}
     </li>
   );
 }

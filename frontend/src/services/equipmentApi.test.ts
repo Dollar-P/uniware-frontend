@@ -1,10 +1,37 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createEquipment, getEquipment, listCategories, listEquipment, listMyEquipment, updateEquipment } from './equipmentApi';
+import { archiveEquipment, createEquipment, getEquipment, listCategories, listEquipment, listMyEquipment, updateEquipment } from './equipmentApi';
 import { EquipmentError } from '../types/equipment';
 
 const page = { count: 0, next: null, previous: null, results: [] };
 
 describe('equipment API', () => {
+  it('US2-4: posts to the archive endpoint with session cookies and CSRF', async () => {
+    document.cookie = 'csrftoken=archive-token';
+    const archived = { id: 'a/b', status: 'ARCHIVED', archived_at: '2026-11-15T12:00:00Z' };
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(archived)));
+    vi.stubGlobal('fetch', fetchMock);
+    await expect(archiveEquipment('a/b')).resolves.toEqual(archived);
+    expect(fetchMock).toHaveBeenCalledWith('/api/equipment/a%2Fb/archive', {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': 'archive-token' },
+    });
+  });
+
+  it('US2-4: preserves backend conflict messages and status', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      error: { code: 'BOOKING_CONFLICT', message: 'Equipment with an active reservation or loan cannot be archived.', details: null },
+    }), { status: 409 })));
+    await expect(archiveEquipment('uuid')).rejects.toMatchObject({
+      status: 409, message: 'Equipment with an active reservation or loan cannot be archived.',
+    });
+  });
+
+  it('US2-4: supplies a useful archive error for non-JSON failures', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('Bad gateway', { status: 502 })));
+    await expect(archiveEquipment('uuid')).rejects.toMatchObject({
+      status: 502, message: 'Unable to archive equipment. Please try again.',
+    });
+  });
   it('requests catalog pages with session cookies', async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(page)));
     vi.stubGlobal('fetch', fetchMock);

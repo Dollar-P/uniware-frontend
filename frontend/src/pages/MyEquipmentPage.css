@@ -101,6 +101,20 @@
 .equipment-status-archived,
 .equipment-status-disabled { color: var(--color-muted); }
 
+.equipment-archive-action,
+.equipment-archive-confirmation { grid-column: 1 / -1; }
+.equipment-archive-action { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.equipment-archive-action .register-button { margin-top: 0; min-height: 40px; padding: 8px 20px; }
+.equipment-archive-hint { margin: 0; color: var(--color-muted); font-size: 14px; }
+.equipment-archive-confirmation {
+  border: 1px solid var(--color-line);
+  border-radius: 16px;
+  padding: 20px;
+  overflow-wrap: anywhere;
+}
+.equipment-archive-confirmation p { margin: 0 0 16px; line-height: 1.6; }
+.equipment-archive-confirmation .form-actions { max-width: 440px; }
+
 .equipment-empty {
   max-width: 640px;
   margin: 48px auto;

@@ -4,6 +4,7 @@ export interface RegisterRequest {
   email: string;
   password: string;
   department?: string;
+  data_storage_consent: boolean;
 }
 export type RegisterFormData = RegisterRequest;
 export type RegisterFormErrors = Partial<Record<keyof RegisterRequest, string>>;

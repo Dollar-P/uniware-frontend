@@ -12,6 +12,7 @@ async function fillForm() {
   await user.type(screen.getByLabelText('Last name'), 'Smith');
   await user.type(screen.getByLabelText('University Email'), 'PUTTER@chula.ac.th');
   await user.type(screen.getByLabelText('Password'), 'unusual phrase here');
+  await user.click(screen.getByRole('checkbox', { name: /I explicitly consent/ }));
   return user;
 }
 describe('RegisterForm', () => {
@@ -27,7 +28,7 @@ describe('RegisterForm', () => {
     await user.click(screen.getByRole('button', { name: 'Sign up' }));
     expect(mockedRegisterUser).toHaveBeenCalledWith({
       first_name: 'Putter', last_name: 'Smith', email: 'putter@chula.ac.th',
-      password: 'unusual phrase here', department: '',
+      password: 'unusual phrase here', department: '', data_storage_consent: true,
     });
     expect(await screen.findByRole('status')).toHaveTextContent('Registration successful');
     expect(screen.getByLabelText('First name')).toHaveValue('');
@@ -50,6 +51,14 @@ describe('RegisterForm', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Sign up' }));
     expect(screen.getByText('First name is required')).toBeInTheDocument();
     expect(screen.getByText('Last name is required')).toBeInTheDocument();
+    expect(mockedRegisterUser).not.toHaveBeenCalled();
+  });
+  it('requires explicit personal data consent', async () => {
+    render(<RegisterForm />);
+    const user = await fillForm();
+    await user.click(screen.getByRole('checkbox', { name: /I explicitly consent/ }));
+    await user.click(screen.getByRole('button', { name: 'Sign up' }));
+    expect(screen.getByText('Consent to personal data storage is required')).toBeInTheDocument();
     expect(mockedRegisterUser).not.toHaveBeenCalled();
   });
 });

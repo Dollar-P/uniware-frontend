@@ -32,6 +32,7 @@ export interface ProviderBorrowRequest {
   decided_by: string | null;
   decided_at: string | null;
   return_condition?: string;
+  /** US7-1: server timestamp set when the provider confirms the return (CHECKED_OUT → COMPLETED). */
   returned_at?: string | null;
 }
 

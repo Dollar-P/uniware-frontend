@@ -46,6 +46,22 @@ export async function approveProviderRequest(id: string): Promise<ProviderBorrow
   return normalizeRequest(await readJson<RequestWire>(response, 'Unable to approve this request.'));
 }
 
+/** US7-1: active loans awaiting return are this provider's CHECKED_OUT requests.
+ *  The provider endpoint is already scoped to equipment the signed-in provider owns. */
+export function listProviderActiveLoans(page = 1): Promise<ProviderRequestPage> {
+  return listProviderRequests(page, 'CHECKED_OUT');
+}
+
+/** US7-1 (proposed contract): the owning provider confirms a CHECKED_OUT loan is back.
+ *  The backend sets returned_at and COMPLETED in one transaction, answers 409 when the loan
+ *  is no longer CHECKED_OUT (e.g. already returned) and 403/404 for another provider. */
+export async function confirmProviderReturn(id: string): Promise<ProviderBorrowRequest> {
+  const response = await fetch(`${providerPath}/${encodeURIComponent(id)}/return`, {
+    method: 'POST', credentials: 'include', headers: csrfHeaders(), body: JSON.stringify({}),
+  });
+  return normalizeRequest(await readJson<RequestWire>(response, 'Unable to confirm this return.'));
+}
+
 /** US5-4. Django expects {reason: string}; the reason must be nonblank and <=2000 characters. */
 export async function rejectProviderRequest(id: string, reason: string): Promise<ProviderBorrowRequest> {
   const response = await fetch(`${providerPath}/${encodeURIComponent(id)}/reject`, {

@@ -18,12 +18,12 @@ import type { RegisterResponse } from './types/auth';
 import uniwareLogo from './assets/brand/uniware-logo.svg';
 
 
-type Route = 'profile' | 'signup' | 'login' | 'account' | 'my-equipment' | 'catalog' | 'user-management' | 'admin-equipment' | 'provider-requests' | 'provider-returns' | 'my-requests' | 'my-loans' | `provider-requests/${string}` | `my-requests/${string}` | `equipment/${string}`;
+type Route = 'profile' | 'signup' | 'login' | 'account' | 'my-equipment' | 'catalog' | 'user-management' | 'admin-equipment' | 'provider-requests' | 'provider-pickup' | 'provider-returns' | 'my-requests' | 'my-loans' | `provider-requests/${string}` | `my-requests/${string}` | `equipment/${string}`;
 /** Routes that need a signed-in user: a signed-out visitor is sent to login. */
 function isAuthenticatedRoute(route: Route): boolean {
   return route === 'profile' || route === 'account' || route === 'catalog' || route === 'my-equipment'
     || route === 'user-management' || route === 'admin-equipment'
-    || route === 'provider-requests' || route === 'provider-returns' || route === 'my-requests' || route === 'my-loans'
+    || route === 'provider-requests' || route === 'provider-pickup' || route === 'provider-returns' || route === 'my-requests' || route === 'my-loans'
     || route.startsWith('provider-requests/') || route.startsWith('my-requests/') || route.startsWith('equipment/');
 }
 
@@ -31,6 +31,7 @@ function readRoute(): Route {
   if (window.location.hash === '#profile') return 'profile';
   if (window.location.hash === '#catalog') return 'catalog';
   if (window.location.hash === '#provider-requests') return 'provider-requests';
+  if (window.location.hash === '#provider-pickup') return 'provider-pickup';
   if (window.location.hash === '#provider-returns') return 'provider-returns';
   if (window.location.hash === '#my-loans') return 'my-loans';
   if (window.location.hash.startsWith('#provider-requests/')) return window.location.hash.slice(1) as Route;
@@ -125,6 +126,7 @@ function App() {
       'user-management': 'User management',
       'admin-equipment': 'Equipment suspension',
       'provider-requests': 'Borrow requests',
+      'provider-pickup': 'Ready for pickup',
       'provider-returns': 'Return queue',
       'my-loans': 'My active loans',
       'my-requests': 'My borrow requests',
@@ -166,8 +168,9 @@ function App() {
   if ((route === 'user-management' || route === 'admin-equipment') && !checking && user && !user.is_admin) {
     return <main className="account-page"><section className="account-content"><h1>Admin access required</h1><p>This page is only available to administrator accounts.</p><a className="register-button account-action-link" href="#account">Back to your account</a></section></main>;
   }
+  if (route === 'provider-pickup' && !checking && user) return <ProviderRequestsPage key="pickup" user={user} readyForPickup />;
   if (route === 'provider-requests' && !checking && user) {
-    return <ProviderRequestsPage user={user} />;
+    return <ProviderRequestsPage key="requests" user={user} />;
   }
   if (route.startsWith('provider-requests/') && !checking && user) {
     let id = '';
@@ -225,6 +228,7 @@ function App() {
                 <>
                   <a className="register-button account-action-link" href="#my-equipment">Manage my equipment</a>
                   <a className="register-button account-action-link" href="#provider-requests">View borrow requests</a>
+                  <a className="register-button account-action-link" href="#provider-pickup">Ready for pickup</a>
                   <a className="register-button account-action-link" href="#provider-returns">Return queue</a>
                 </>
               )}

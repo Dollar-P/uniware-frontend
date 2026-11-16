@@ -5,10 +5,8 @@ import MyRequestCard from './MyRequestCard';
 import RequestCard from './RequestCard';
 import { providerRequestFixtures } from '../../test/fixtures/providerRequests';
 import type { MyBorrowRequest } from '../../types/borrowRequest';
-import { checkoutMyBorrowRequest } from '../../services/myRequestsApi';
 import { returnProviderRequest } from '../../services/providerRequestsApi';
 
-vi.mock('../../services/myRequestsApi', () => ({ checkoutMyBorrowRequest: vi.fn() }));
 vi.mock('../../services/providerRequestsApi', () => ({ returnProviderRequest: vi.fn() }));
 
 const providerRequest = providerRequestFixtures[0];
@@ -21,14 +19,11 @@ const myRequest: MyBorrowRequest = {
 afterEach(() => vi.resetAllMocks());
 
 describe('Borrower checkout UI', () => {
-  it('shows Check out only for approved requests, below View details', async () => {
-    vi.mocked(checkoutMyBorrowRequest).mockResolvedValue({ ...myRequest, status: 'CHECKED_OUT' });
-    const changed = vi.fn();
-    render(<MyRequestCard request={myRequest} onCheckedOut={changed} />);
+  it('explains that the provider confirms collection without a borrower checkout action', () => {
+    render(<MyRequestCard request={myRequest} />);
     expect(screen.getByRole('link', { name: 'View details' })).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Check out' }));
-    await waitFor(() => expect(checkoutMyBorrowRequest).toHaveBeenCalledWith(myRequest.id));
-    expect(changed).toHaveBeenCalledOnce();
+    expect(screen.getByText(/The provider confirms handover/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Check out' })).not.toBeInTheDocument();
   });
 
   it('hides Check out on pending or returned requests', () => {

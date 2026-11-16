@@ -8,7 +8,8 @@ import RequestStatusBadge from '../components/requests/RequestStatusBadge';
 import SuspensionNotice from '../components/equipment/SuspensionNotice';
 import BorrowerName from '../components/requests/BorrowerName';
 import ReturnConditionDialog from '../components/requests/ReturnConditionDialog';
-import { approveProviderRequest, confirmProviderReturn, rejectProviderRequest, getProviderRequest, returnProviderRequest } from '../services/providerRequestsApi';
+import { checkoutProviderRequest, approveProviderRequest, confirmProviderReturn, rejectProviderRequest, getProviderRequest, returnProviderRequest } from '../services/providerRequestsApi';
+import { serverToday } from '../utils/serverDate';
 import { dateLabel, ProviderRequestError } from '../types/borrowRequest';
 import type { ProviderBorrowRequest } from '../types/borrowRequest';
 import type { RegisterResponse } from '../types/auth';
@@ -36,6 +37,14 @@ export default function ProviderRequestDetailPage({ user, requestId }: { user: R
   const [decision, setDecision] = useState<Decision>(null);
   const [decisionBusy, setDecisionBusy] = useState(false);
   const [decisionError, setDecisionError] = useState('');
+  const [handoverBusy, setHandoverBusy] = useState(false);
+  async function handover() {
+    if (handoverBusy || !window.confirm('Confirm that the borrower has collected this equipment? Your account and the pickup time will be recorded.')) return;
+    setHandoverBusy(true); setError('');
+    try { setRequest(await checkoutProviderRequest(requestId)); setSuccess('Handover confirmed. The loan is now active.'); }
+    catch (cause) { setError(cause instanceof Error ? cause.message : 'Unable to confirm handover.'); }
+    finally { setHandoverBusy(false); }
+  }
   const [returnOpen, setReturnOpen] = useState(false);
 
   const load = useCallback(async () => {
@@ -162,6 +171,9 @@ export default function ProviderRequestDetailPage({ user, requestId }: { user: R
             )}
             {request.decision_reason && <div className="provider-request-wide"><dt>Decision reason</dt><dd>{request.decision_reason}</dd></div>}
           </dl>
+          {request.status === 'APPROVED' && request.pickup_date >= serverToday() && ['AVAILABLE', 'RESERVED'].includes(request.equipment.status) && !request.equipment.is_suspended && request.borrower.account_status !== 'SUSPENDED' && (
+            <button type="button" className="provider-request-button provider-request-button-primary" disabled={handoverBusy} onClick={() => void handover()}>{handoverBusy ? 'Confirming…' : 'Confirm handover'}</button>
+          )}
           <HandoverRecord request={request} viewerId={user.id} />
           <SuspensionNotice equipment={request.equipment} />
           {request.status === 'PENDING' && request.borrower.account_status === 'SUSPENDED' && (

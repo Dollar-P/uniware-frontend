@@ -3,11 +3,6 @@ import { borrowerLabel, dateLabel } from '../../types/borrowRequest';
 import { STATUS_LABELS } from '../../types/equipment';
 import { serverToday } from '../../utils/serverDate';
 
-/** US6-2 / US6-3: the handover of an approved request, as far as the API records it.
- *  Pickup is confirmed by the borrower (POST /requests/borrow-requests/{id}/checkout/). The
- *  provider API has no handover action and stores no pickup time or handover person, so this
- *  shows what the provider response does carry: who approved and when (decided_by,
- *  decided_at), the planned pickup date, and who collects or holds the equipment. */
 export default function HandoverRecord({ request, viewerId, today = serverToday() }: {
   request: ProviderBorrowRequest; viewerId: string; today?: string;
 }) {
@@ -24,14 +19,19 @@ export default function HandoverRecord({ request, viewerId, today = serverToday(
   // refusing the borrower's checkout, in the order a provider can act on them.
   else if (request.borrower.account_status === 'SUSPENDED') summary = `Pickup is on hold while ${borrower}'s account is suspended.`;
   else if (equipment.is_suspended) summary = 'Pickup is on hold while this equipment is suspended.';
-  else if (request.pickup_date < today) summary = `The pickup date has passed, so ${borrower} can no longer confirm pickup. A new request with new dates is needed.`;
+  else if (request.pickup_date < today) summary = `The pickup date has passed, so ${borrower} can no longer collect this request. A new request with new dates is needed.`;
   else if (equipment.status !== 'AVAILABLE' && equipment.status !== 'RESERVED') summary = `Pickup is not possible while the equipment is marked ${STATUS_LABELS[equipment.status].toLowerCase()}.`;
-  else summary = `Ready for pickup. ${borrower} confirms pickup from their request page, up to ${dateLabel(request.pickup_date)}. This request then shows as checked out.`;
+  else summary = `Ready for pickup. Confirm handover when ${borrower} collects the equipment, up to ${dateLabel(request.pickup_date)}. This request then shows as checked out.`;
   return (
     <section className="provider-handover" aria-labelledby="handover-title">
       <h2 id="handover-title">Handover</h2>
       <p className="provider-handover-summary">{summary}</p>
       <dl className="provider-request-detail-grid">
+        {request.checkout_record ? <>
+          <div><dt>Picked up at</dt><dd>{new Date(request.checkout_record.checkout_at).toLocaleString('en-GB')}</dd></div>
+          <div><dt>Handed over by</dt><dd>{borrowerLabel(request.checkout_record.handover_person)}</dd></div>
+        </> : request.status !== 'APPROVED' && <div><dt>Handover record</dt><dd>Not recorded for this legacy loan.</dd></div>}
+
         <div><dt>{request.status === 'APPROVED' ? 'To be collected by' : 'Collected by'}</dt><dd>{borrower}</dd></div>
         <div><dt>Planned pickup date</dt><dd>{dateLabel(request.pickup_date)}</dd></div>
         {request.decided_at && (

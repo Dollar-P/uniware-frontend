@@ -80,7 +80,7 @@ export default function MyRequestsPage({ user }: { user: RegisterResponse }) {
           <div className="provider-request-empty"><h2>{filter === 'ALL' ? 'No borrow requests yet' : 'No matching requests'}</h2>
             <p>{filter === 'ALL' ? 'Requests you submit from the equipment catalog will appear here.' : 'Try another status filter or select All.'}</p>
             <a className="provider-request-button provider-request-button-primary" href="#catalog">Browse equipment</a></div>
-        ) : <ul className="provider-request-list">{requests.map(request => <MyRequestCard key={request.id} request={request} onCheckedOut={() => load(page, filter)} />)}</ul>}
+        ) : <ul className="provider-request-list">{requests.map(request => <MyRequestCard key={request.id} request={request} />)}</ul>}
         {(page > 1 || hasNext) && !loading && !error && (
           <nav className="provider-request-pagination" aria-label="Request pages">
             <button type="button" disabled={page <= 1} onClick={() => setPage(value => value - 1)}>Previous</button>

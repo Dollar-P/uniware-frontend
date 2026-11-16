@@ -1,26 +1,9 @@
-import { useState } from 'react';
-import { checkoutMyBorrowRequest } from '../../services/myRequestsApi';
 import type { MyBorrowRequest } from '../../types/borrowRequest';
 import { dateLabel } from '../../types/borrowRequest';
 import RequestStatusBadge from './RequestStatusBadge';
 import SuspensionNotice from '../equipment/SuspensionNotice';
 
-export default function MyRequestCard({ request, onCheckedOut }: {
-  request: MyBorrowRequest;
-  onCheckedOut?: () => void | Promise<void>;
-}) {
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
-  async function checkout() {
-    setBusy(true);
-    setError('');
-    try {
-      await checkoutMyBorrowRequest(request.id);
-      await onCheckedOut?.();
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Unable to check out.');
-    } finally { setBusy(false); }
-  }
+export default function MyRequestCard({ request }: { request: MyBorrowRequest }) {
   return (
     <li className="provider-request-card">
       <div>
@@ -35,12 +18,7 @@ export default function MyRequestCard({ request, onCheckedOut }: {
       </div>
       <div className="provider-request-card-actions">
         <a className="provider-request-button provider-request-button-primary" href={`#my-requests/${encodeURIComponent(request.id)}`}>View details</a>
-        {request.status === 'APPROVED' && !request.equipment.is_suspended && (
-          <button type="button" className="provider-request-button" disabled={busy} onClick={() => void checkout()}>
-            {busy ? 'Checking out...' : 'Check out'}
-          </button>
-        )}
-        {error && <p role="alert" className="provider-request-error">{error}</p>}
+        {request.status === 'APPROVED' && <p>The provider confirms handover when you collect the equipment.</p>}
       </div>
     </li>
   );

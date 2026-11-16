@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import ProviderRequestDetailPage from './ProviderRequestDetailPage';
-import { getProviderRequest } from '../services/providerRequestsApi';
+import userEvent from '@testing-library/user-event';
+import { checkoutProviderRequest, getProviderRequest } from '../services/providerRequestsApi';
 import { providerRequestFixtures } from '../test/fixtures/providerRequests';
 import type { ProviderBorrowRequest } from '../types/borrowRequest';
 import type { RegisterResponse } from '../types/auth';
@@ -10,7 +11,7 @@ import { addDays, toDateInput } from '../utils/dateValidation';
 vi.mock('../services/providerRequestsApi', () => ({
   listProviderActiveLoans: vi.fn(), confirmProviderReturn: vi.fn(), getProviderRequest: vi.fn(),
   listProviderRequests: vi.fn(), approveProviderRequest: vi.fn(), rejectProviderRequest: vi.fn(),
-  returnProviderRequest: vi.fn(),
+  returnProviderRequest: vi.fn(), checkoutProviderRequest: vi.fn(),
 }));
 
 const provider: RegisterResponse = {
@@ -26,14 +27,20 @@ const approved: ProviderBorrowRequest = {
 beforeEach(() => { vi.resetAllMocks(); });
 
 describe('US6-2 / US6-3 handover on the provider request detail page', () => {
-  it('shows the handover record for an approved request, with no provider checkout button', async () => {
+  it('shows the handover record for an approved request, with a provider handover action', async () => {
     vi.mocked(getProviderRequest).mockResolvedValue(approved);
     render(<ProviderRequestDetailPage user={provider} requestId={approved.id} />);
     expect(await screen.findByRole('heading', { name: 'Handover' })).toBeInTheDocument();
-    expect(screen.getByText(/^Ready for pickup\. Somchai Jaidee confirms pickup/)).toBeInTheDocument();
+    expect(screen.getByText(/^Ready for pickup\. Confirm handover/)).toBeInTheDocument();
     expect(screen.getByText('Approved by').nextElementSibling).toHaveTextContent('You');
-    // The API offers no provider-side checkout, so the page must not offer one either.
-    expect(screen.queryByRole('button', { name: /check ?out|hand ?over|confirm pickup/i })).not.toBeInTheDocument();
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    vi.mocked(checkoutProviderRequest).mockResolvedValue({ ...approved, status: 'CHECKED_OUT', checkout_record: { checkout_at: '2026-11-16T03:00:00Z', handover_person: { id: provider.id, first_name: 'Putter', last_name: 'Test' } } });
+    await userEvent.click(screen.getByRole('button', { name: 'Confirm handover' }));
+    expect(checkoutProviderRequest).toHaveBeenCalledWith(approved.id);
+    expect(await screen.findByText('Picked up at')).toBeInTheDocument();
+    expect(screen.getByText('Putter Test')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Confirm handover' })).not.toBeInTheDocument();
+    vi.restoreAllMocks();
   });
 
   it('shows who collected the equipment once it is checked out, next to the return action', async () => {

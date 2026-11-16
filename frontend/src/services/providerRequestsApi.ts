@@ -79,3 +79,15 @@ export async function returnProviderRequest(id: string, condition: string): Prom
   });
   return normalizeRequest(await readJson<RequestWire>(response, 'Unable to mark this request as returned.'));
 }
+
+export async function listReadyForPickup(page = 1): Promise<ProviderRequestPage> {
+  const response = await fetch(`${providerPath}/ready-for-pickup?page=${page}`, { credentials: 'include', cache: 'no-store' });
+  return normalizePage(await readJson<ProviderRequestPage>(response, 'Unable to load ready-for-pickup requests.'));
+}
+
+export async function checkoutProviderRequest(id: string): Promise<ProviderBorrowRequest> {
+  const response = await fetch(`${providerPath}/${encodeURIComponent(id)}/checkout`, {
+    method: 'POST', credentials: 'include', headers: csrfHeaders(), body: JSON.stringify({}),
+  });
+  return normalizeRequest(await readJson<RequestWire>(response, 'Unable to confirm handover.'));
+}

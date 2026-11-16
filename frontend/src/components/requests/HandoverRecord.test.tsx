@@ -18,10 +18,10 @@ describe('US6-2 handover status for the provider', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it('says an approved request is ready and that the borrower confirms pickup', () => {
+  it('says an approved request is ready and that the provider confirms handover', () => {
     show(approved);
     expect(screen.getByRole('heading', { name: 'Handover' })).toBeInTheDocument();
-    expect(screen.getByText(/^Ready for pickup\. Somchai Jaidee confirms pickup from their request page, up to 18 Nov 2026\./)).toBeInTheDocument();
+    expect(screen.getByText(/^Ready for pickup\. Confirm handover when Somchai Jaidee collects the equipment, up to 18 Nov 2026\./)).toBeInTheDocument();
     expect(screen.getByText('To be collected by').nextElementSibling).toHaveTextContent('Somchai Jaidee');
   });
 
@@ -32,7 +32,7 @@ describe('US6-2 handover status for the provider', () => {
 
   it('says pickup can no longer be confirmed once the pickup date has passed', () => {
     show({ ...approved, pickup_date: '2026-11-15' });
-    expect(screen.getByText(/^The pickup date has passed, so Somchai Jaidee can no longer confirm pickup\./)).toBeInTheDocument();
+    expect(screen.getByText(/^The pickup date has passed, so Somchai Jaidee can no longer collect this request\./)).toBeInTheDocument();
     expect(screen.queryByText(/Ready for pickup/)).not.toBeInTheDocument();
   });
 

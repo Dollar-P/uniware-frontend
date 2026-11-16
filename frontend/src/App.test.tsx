@@ -91,6 +91,7 @@ describe('session navigation', () => {
   });
   beforeEach(() => {
     vi.resetAllMocks();
+    vi.spyOn(equipmentApi, 'listEquipmentNotices').mockResolvedValue([]);
     window.history.replaceState(null, '', '/');
     vi.mocked(currentUser).mockResolvedValue(null);
   });

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from '../App';
 import CatalogPage from './CatalogPage';
@@ -158,5 +158,24 @@ describe('US8-4 disabled listings are hidden from borrowers', () => {
     vi.spyOn(api, 'getEquipment').mockResolvedValue(suspended);
     render(<EquipmentDetailPage equipmentId={suspended.id} user={{ ...user, is_admin: true }} />);
     expect(await screen.findByRole('heading', { name: 'Broken Drone' })).toBeInTheDocument();
+  });
+});
+
+describe('catalog equipment photos', () => {
+  afterEach(() => vi.restoreAllMocks());
+  it('uses the lowest available photo slot and falls back when it fails', async () => {
+    const photos = [
+      { slot: 3, preview_url: '/api/photos/equipment/eq-1/preview-3', original_url: '/api/photos/equipment/eq-1/original-3' },
+      { slot: 1, preview_url: '/api/photos/equipment/eq-1/preview', original_url: '/api/photos/equipment/eq-1/original' },
+    ];
+    vi.spyOn(api, 'listEquipment').mockResolvedValue({ ...result, results: [{ ...item, photos }] });
+    render(catalog);
+    const link = await screen.findByRole('link', { name: 'View Microscope' });
+    const image = link.querySelector('img');
+    expect(image).toHaveAttribute('src', photos[1].preview_url);
+    expect(image).toHaveAttribute('loading', 'lazy');
+    fireEvent.error(image!);
+    expect(link.querySelector('img')).toBeNull();
+    expect(link.querySelector('.catalog-card-art')).toHaveTextContent('L');
   });
 });

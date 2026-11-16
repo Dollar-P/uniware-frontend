@@ -6,6 +6,11 @@ import type { Category, Equipment, EquipmentFormErrors, EquipmentRequest, Locati
 
 const baseUrl = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
 
+export function photoUrl(path: string): string {
+  if (!path.startsWith('/api/')) return path;
+  return `${baseUrl}${path.slice('/api'.length)}`;
+}
+
 const WRITABLE_FIELDS = ['asset_id', 'name', 'model', 'description', 'category_id', 'location_id', 'status'] as const;
 
 function csrfHeaders(): Record<string, string> {
@@ -84,24 +89,33 @@ export async function getEquipment(id: string): Promise<Equipment> {
   return readJson(response, 'Unable to load this equipment. Please try again.');
 }
 
+export type PhotoChanges = { files: (File | null)[]; removed: number[] };
+function equipmentBody(data: Partial<EquipmentRequest>, photos?: PhotoChanges): { body: BodyInit; headers: Record<string, string> } {
+  if (!photos || (!photos.files.some(Boolean) && photos.removed.length === 0)) return { body: JSON.stringify(data), headers: csrfHeaders() };
+  const body = new FormData();
+  for (const [key, value] of Object.entries(data)) if (value !== undefined) body.append(key, value);
+  photos.files.forEach((file, index) => { if (file) body.append(index === 0 ? 'photo' : `photo_${index + 1}`, file); });
+  photos.removed.forEach(slot => body.append('remove_photos', String(slot)));
+  const headers = csrfHeaders(); delete headers['Content-Type'];
+  return { body, headers };
+}
+
 /** US2-1: providers add equipment. */
-export async function createEquipment(data: EquipmentRequest): Promise<Equipment> {
+export async function createEquipment(data: EquipmentRequest, photos?: PhotoChanges): Promise<Equipment> {
   const response = await fetch(`${baseUrl}/equipment`, {
     method: 'POST',
     credentials: 'include',
-    headers: csrfHeaders(),
-    body: JSON.stringify(data),
+    ...equipmentBody(data, photos),
   });
   return readJson(response, 'Unable to add equipment. Please try again.');
 }
 
 /** US2-3: providers edit their own equipment. */
-export async function updateEquipment(id: string, data: Partial<EquipmentRequest>): Promise<Equipment> {
+export async function updateEquipment(id: string, data: Partial<EquipmentRequest>, photos?: PhotoChanges): Promise<Equipment> {
   const response = await fetch(`${baseUrl}/equipment/${encodeURIComponent(id)}`, {
     method: 'PATCH',
     credentials: 'include',
-    headers: csrfHeaders(),
-    body: JSON.stringify(data),
+    ...equipmentBody(data, photos),
   });
   return readJson(response, 'Unable to save your changes. Please try again.');
 }

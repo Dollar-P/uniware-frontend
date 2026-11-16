@@ -154,3 +154,10 @@ export async function listEquipmentNotices(): Promise<EquipmentNotice[]> {
   const response = await fetch(`${baseUrl}/notifications`, { credentials: 'include', cache: 'no-store' });
   return readJson(response, 'Unable to load notifications.');
 }
+
+export async function disableEquipment(id: string, reason: string): Promise<Equipment> {
+  const response = await fetch(`${baseUrl}/admin/equipment/${encodeURIComponent(id)}/disable`, {
+    method: 'POST', credentials: 'include', headers: csrfHeaders(), body: JSON.stringify({ reason }),
+  });
+  return readJson(response, 'Unable to disable this listing.');
+}

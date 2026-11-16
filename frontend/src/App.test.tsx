@@ -151,7 +151,7 @@ describe('admin routes', () => {
   it('keeps a signed-in admin on user management instead of sending them to the account page', async () => {
     window.location.hash = 'user-management';
     vi.mocked(currentUser).mockResolvedValue({ ...account, is_admin: true });
-    vi.mocked(listUsers).mockResolvedValue([]);
+    vi.mocked(listUsers).mockResolvedValue({ count: 0, next: null, previous: null, results: [] });
     render(<App />);
     expect(await screen.findByRole('heading', { name: 'User management' })).toBeInTheDocument();
     expect(window.location.hash).toBe('#user-management');

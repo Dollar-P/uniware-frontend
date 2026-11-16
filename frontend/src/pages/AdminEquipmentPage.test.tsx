@@ -37,3 +37,15 @@ describe('Admin equipment suspension', () => {
     expect(screen.queryByRole('button', { name: 'Remove manual hold' })).not.toBeInTheDocument();
   });
 });
+
+it('confirms disabling a listing with a reason and displays the saved disabled state', async () => {
+  vi.spyOn(api, 'listAdminEquipment').mockResolvedValue({ count: 1, next: null, previous: null, results: [item] });
+  vi.spyOn(window, 'prompt').mockReturnValue('Retired');
+  vi.spyOn(window, 'confirm').mockReturnValue(true);
+  const disable = vi.spyOn(api, 'disableEquipment').mockResolvedValue({ ...item, disabled_at: '2026-11-16T00:00:00Z', is_suspended: true });
+  render(<AdminEquipmentPage />);
+  await userEvent.click(await screen.findByRole('button', { name: 'Disable listing' }));
+  expect(disable).toHaveBeenCalledWith(item.id, 'Retired');
+  expect(await screen.findByText('Listing disabled')).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Suspend' })).not.toBeInTheDocument();
+});

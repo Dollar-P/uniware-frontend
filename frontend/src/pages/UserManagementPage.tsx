@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { RegisterResponse } from '../types/auth';
 import { listUsers, updateUserRoles, updateUserStatus } from '../services/userManagementApi';
 import uniwareLogo from '../assets/brand/uniware-logo.svg';
@@ -20,26 +20,36 @@ export default function UserManagementPage({ user }: { user: RegisterResponse })
   const [loadFailed, setLoadFailed] = useState(false);
   const [search, setSearch] = useState('');
 
-  async function refresh() {
+  const [page, setPage] = useState(1);
+  const [query, setQuery] = useState('');
+  const [count, setCount] = useState(0);
+  const [hasNext, setHasNext] = useState(false);
+  const generation = useRef(0);
+  const refresh = useCallback(async () => {
+    const version = ++generation.current;
     setLoading(true);
     setError('');
     setLoadFailed(false);
     try {
-      setUsers(await listUsers());
+      const result = await listUsers(page, query);
+      if (version !== generation.current) return;
+      setUsers(result.results); setCount(result.count); setHasNext(Boolean(result.next));
     } catch (e) {
+      if (version !== generation.current) return;
       setLoadFailed(true);
       setError(e instanceof Error ? e.message : 'Unable to load users.');
     } finally {
-      setLoading(false);
+      if (version === generation.current) setLoading(false);
     }
-  }
+  }, [page, query]);
 
   useEffect(() => {
     document.title = 'User management · UniWare';
     // Fetching the table is an intentional effect when this page first mounts.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void refresh();
-  }, []);
+    return () => { generation.current += 1; };
+  }, [refresh]);
 
   async function toggleRole(target: RegisterResponse, key: RoleKey) {
     const next = !target[key];
@@ -89,13 +99,6 @@ export default function UserManagementPage({ user }: { user: RegisterResponse })
     }
   }
 
-  // GET /api/auth/users returns every account and takes no search parameter, so the
-  // US8-1 search filters the loaded list by name or email here.
-  const keyword = search.trim().toLowerCase();
-  const visibleUsers = keyword
-    ? users.filter(account => `${account.first_name} ${account.last_name} ${account.email}`.toLowerCase().includes(keyword))
-    : users;
-
   return (
     <main className="user-management-page">
       <header className="user-management-header">
@@ -105,13 +108,14 @@ export default function UserManagementPage({ user }: { user: RegisterResponse })
       <section className="user-management-panel">
         <h1>User management</h1>
         <p>Manage roles and suspend or reactivate accounts. Changes are saved immediately.</p>
-        <div className="user-search" role="search">
+        <form className="user-search" role="search" onSubmit={event => { event.preventDefault(); setPage(1); setQuery(search.trim()); }}>
           <label htmlFor="user-search">Search name or email</label>
           <input id="user-search" type="search" value={search} placeholder="Name or email"
             onChange={event => setSearch(event.target.value)} />
-          <button className="register-button button-secondary" type="button" disabled={!search}
-            onClick={() => setSearch('')}>Clear search</button>
-        </div>
+          <button className="register-button" type="submit">Search</button>
+          <button className="register-button button-secondary" type="button" disabled={!search && !query}
+            onClick={() => { setSearch(''); setQuery(''); setPage(1); }}>Clear search</button>
+        </form>
         {error && <p role="alert" className="user-management-error">{error}</p>}
         {notice && <p role="status" className="user-management-notice">{notice}</p>}
         {loading ? <p role="status">Loading users…</p> : loadFailed ? (
@@ -120,7 +124,7 @@ export default function UserManagementPage({ user }: { user: RegisterResponse })
           <div className="user-table-wrap">
             <table>
               <thead><tr><th>User</th><th>Email</th><th>Department</th><th>Roles</th><th>Status</th><th>Actions</th><th>Joined</th></tr></thead>
-              <tbody>{visibleUsers.map(account => (
+              <tbody>{users.map(account => (
                 <tr key={account.id}>
                   <td>{account.first_name} {account.last_name}</td>
                   <td>{account.email}</td>
@@ -150,14 +154,13 @@ export default function UserManagementPage({ user }: { user: RegisterResponse })
                 </tr>
               ))}</tbody>
             </table>
-            {users.length === 0 && <p>No user accounts found.</p>}
-            {users.length > 0 && keyword && (
-              <p className="user-search-result">
-                {visibleUsers.length === 0
-                  ? `No users match "${search.trim()}".`
-                  : `Showing ${visibleUsers.length} of ${users.length} accounts.`}
-              </p>
-            )}
+            {users.length === 0 && <p>{query ? `No users match "${query}".` : 'No user accounts found.'}</p>}
+            <p>{count} accounts</p>
+            <nav aria-label="User pages">
+              <button disabled={page <= 1 || loading} onClick={() => setPage(value => value - 1)}>Previous</button>
+              <span>Page {page}</span>
+              <button disabled={!hasNext || loading} onClick={() => setPage(value => value + 1)}>Next</button>
+            </nav>
           </div>
         )}
       </section>

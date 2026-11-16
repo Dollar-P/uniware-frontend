@@ -9,6 +9,8 @@ vi.mock('../services/userManagementApi', () => ({
   listUsers: vi.fn(), updateUserRoles: vi.fn(), updateUserStatus: vi.fn(),
 }));
 
+const pageOf = (results: RegisterResponse[]) => ({ count: results.length, results, next: null, previous: null });
+
 const admin: RegisterResponse = {
   id: 'admin', email: 'admin@chula.ac.th', first_name: 'Admin', last_name: 'User',
   department: '', is_admin: true, is_provider: false, is_borrower: true,
@@ -21,7 +23,7 @@ const borrower: RegisterResponse = {
 
 beforeEach(() => {
   vi.resetAllMocks();
-  vi.mocked(listUsers).mockResolvedValue([admin, borrower]);
+  vi.mocked(listUsers).mockResolvedValue(pageOf([admin, borrower]));
   vi.mocked(updateUserStatus).mockImplementation(async (_, account_status) => ({ ...borrower, account_status }));
   vi.mocked(updateUserRoles).mockResolvedValue(borrower);
 });
@@ -63,22 +65,26 @@ describe('US8-1 user search', () => {
   const provider: RegisterResponse = {
     ...borrower, id: 'provider', email: 'pat.provider@chula.ac.th', first_name: 'Pat', last_name: 'Somchai', is_provider: true,
   };
-  beforeEach(() => { vi.mocked(listUsers).mockResolvedValue([admin, borrower, provider]); });
+  beforeEach(() => { vi.mocked(listUsers).mockImplementation(async (_page, search = '') => pageOf([admin, borrower, provider].filter(user => `${user.first_name} ${user.last_name} ${user.email}`.toLowerCase().includes(search.toLowerCase())))); });
 
   it('filters the list by part of a name, ignoring letter case', async () => {
     render(<UserManagementPage user={admin} />);
     await screen.findByText('borrower@chula.ac.th');
     await userEvent.type(screen.getByLabelText('Search name or email'), 'SOMCH');
+    await userEvent.click(screen.getByRole('button', { name: 'Search' }));
+    await screen.findByText('1 accounts');
     expect(screen.getByText('pat.provider@chula.ac.th')).toBeInTheDocument();
     expect(screen.queryByText('borrower@chula.ac.th')).not.toBeInTheDocument();
     expect(screen.queryByText('admin@chula.ac.th')).not.toBeInTheDocument();
-    expect(screen.getByText('Showing 1 of 3 accounts.')).toBeInTheDocument();
+    expect(screen.getByText('1 accounts')).toBeInTheDocument();
   });
 
   it('filters the list by part of an email', async () => {
     render(<UserManagementPage user={admin} />);
     await screen.findByText('borrower@chula.ac.th');
     await userEvent.type(screen.getByLabelText('Search name or email'), 'borrower@');
+    await userEvent.click(screen.getByRole('button', { name: 'Search' }));
+    await screen.findByText('1 accounts');
     expect(screen.getByText('borrower@chula.ac.th')).toBeInTheDocument();
     expect(screen.queryByText('pat.provider@chula.ac.th')).not.toBeInTheDocument();
   });
@@ -87,19 +93,23 @@ describe('US8-1 user search', () => {
     render(<UserManagementPage user={admin} />);
     await screen.findByText('borrower@chula.ac.th');
     await userEvent.type(screen.getByLabelText('Search name or email'), 'zzz-nobody');
+    await userEvent.click(screen.getByRole('button', { name: 'Search' }));
+    await screen.findByText('0 accounts');
     expect(screen.getByText('No users match "zzz-nobody".')).toBeInTheDocument();
     expect(screen.queryByText('borrower@chula.ac.th')).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Clear search' }));
-    expect(screen.getByText('borrower@chula.ac.th')).toBeInTheDocument();
+    expect(await screen.findByText('borrower@chula.ac.th')).toBeInTheDocument();
     expect(screen.getByText('pat.provider@chula.ac.th')).toBeInTheDocument();
     expect(screen.queryByText(/No users match/)).not.toBeInTheDocument();
   });
 
-  it('searches the list it already loaded, without another request', async () => {
+  it('waits for search submission before requesting results', async () => {
     render(<UserManagementPage user={admin} />);
     await screen.findByText('borrower@chula.ac.th');
     await userEvent.type(screen.getByLabelText('Search name or email'), 'pat');
     expect(listUsers).toHaveBeenCalledTimes(1);
+    await userEvent.click(screen.getByRole('button', { name: 'Search' }));
+    await waitFor(() => expect(listUsers).toHaveBeenLastCalledWith(1, 'pat'));
   });
 });
 
@@ -129,7 +139,7 @@ describe('US8-2 role change confirmation', () => {
 
 describe('US8-3 reactivation confirmation', () => {
   it('does not reactivate an account without confirmation', async () => {
-    vi.mocked(listUsers).mockResolvedValue([admin, { ...borrower, account_status: 'SUSPENDED' }]);
+    vi.mocked(listUsers).mockResolvedValue(pageOf([admin, { ...borrower, account_status: 'SUSPENDED' }]));
     vi.spyOn(window, 'confirm').mockReturnValue(false);
     render(<UserManagementPage user={admin} />);
     await userEvent.click(await screen.findByRole('button', { name: 'Reactivate' }));

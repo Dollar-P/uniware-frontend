@@ -132,31 +132,22 @@ describe('US8-4 disabled listings are hidden from borrowers', () => {
   beforeEach(() => { window.history.replaceState(null, '', '/'); });
   afterEach(() => { vi.restoreAllMocks(); });
 
-  it('leaves a suspended listing out of the borrower catalog and out of its count', async () => {
-    vi.spyOn(api, 'listEquipment').mockResolvedValue(page([item, suspended]));
+  it('renders the server-filtered page and preserves the server total', async () => {
+    vi.spyOn(api, 'listEquipment').mockResolvedValue({ ...page([item]), count: 25, next: '/api/equipment?page=2' });
     render(catalog);
     expect(await screen.findByRole('link', { name: 'View Microscope' })).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'View Broken Drone' })).not.toBeInTheDocument();
-    expect(screen.getByText('1 item in the catalog')).toBeInTheDocument();
+    expect(screen.getByText('25 items in the catalog')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Next' })).toBeEnabled();
   });
 
-  it('shows the empty state when every listing on the page is suspended', async () => {
-    vi.spyOn(api, 'listEquipment').mockResolvedValue(page([suspended]));
+  it('shows empty only when the filtered server result is empty', async () => {
+    vi.spyOn(api, 'listEquipment').mockResolvedValue(page([]));
     render(catalog);
     expect(await screen.findByRole('heading', { name: 'No equipment to show' })).toBeInTheDocument();
   });
 
-  it('still lists it for an admin and for the provider who owns it', async () => {
-    vi.spyOn(api, 'listEquipment').mockResolvedValue(page([suspended]));
-    const first = render(<CatalogPage user={{ ...user, is_admin: true }} onLogout={vi.fn()} loggingOut={false} logoutError="" />);
-    expect(await screen.findByRole('link', { name: 'View Broken Drone' })).toBeInTheDocument();
-    first.unmount();
-    render(<CatalogPage user={{ ...user, id: 'provider', is_provider: true }} onLogout={vi.fn()} loggingOut={false} logoutError="" />);
-    expect(await screen.findByRole('link', { name: 'View Broken Drone' })).toBeInTheDocument();
-  });
-
   it('answers not found when a borrower opens a suspended listing by direct link', async () => {
-    vi.spyOn(api, 'getEquipment').mockResolvedValue(suspended);
+    vi.spyOn(api, 'getEquipment').mockRejectedValue(new EquipmentError('Not found', {}, 404));
     render(<EquipmentDetailPage equipmentId={suspended.id} user={user} />);
     expect(await screen.findByRole('heading', { name: 'Equipment not found' })).toBeInTheDocument();
     expect(screen.queryByText('Broken Drone')).not.toBeInTheDocument();

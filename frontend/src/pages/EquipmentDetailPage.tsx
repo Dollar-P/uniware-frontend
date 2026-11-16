@@ -23,7 +23,7 @@ export default function EquipmentDetailPage({ equipmentId, user }: { equipmentId
         <a className="equipment-back-link" href="#catalog">Back to catalog</a>
       </header>
       <section className="equipment-detail-content" aria-live="polite">
-        <DetailContent key={`${equipmentId}:${attempt}`} equipmentId={equipmentId} user={user} retry={() => setAttempt(value => value + 1)} />
+        <DetailContent key={`${equipmentId}:${attempt}:${user?.id}:${user?.is_admin}`} equipmentId={equipmentId} user={user} retry={() => setAttempt(value => value + 1)} />
       </section>
     </main>
   );

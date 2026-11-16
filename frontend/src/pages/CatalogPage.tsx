@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { listEquipment } from '../services/equipmentApi';
+import { listEquipment, photoUrl } from '../services/equipmentApi';
 import { EquipmentError, STATUS_LABELS } from '../types/equipment';
 import type { Equipment, Paginated } from '../types/equipment';
 import SuspensionNotice from '../components/equipment/SuspensionNotice';
@@ -140,7 +140,7 @@ function CatalogResults({ page, search, filters, setPage, retry }: {
           {results.map(item => (
             <li key={item.id}>
               <a className="catalog-card" href={`#equipment/${encodeURIComponent(item.id)}`} aria-label={`View ${item.name}`}>
-                <div className="catalog-card-art" aria-hidden="true">{item.category.name.slice(0, 1)}</div>
+                <CatalogPhoto item={item} />
                 <div className="catalog-card-body">
                   <p className="catalog-card-category">{item.category.name}</p>
                   <h2>{item.name}</h2>
@@ -165,4 +165,16 @@ function CatalogResults({ page, search, filters, setPage, retry }: {
       )}
     </>
   );
+}
+
+function CatalogPhoto({ item }: { item: Equipment }) {
+  const [failed, setFailed] = useState(false);
+  const photo = item.photos?.reduce<(typeof item.photos)[number] | undefined>(
+    (first, candidate) => !first || candidate.slot < first.slot ? candidate : first, undefined,
+  );
+  return <div className="catalog-card-art" aria-hidden="true">
+    {photo && !failed
+      ? <img src={photoUrl(photo.preview_url)} alt="" loading="lazy" onError={() => setFailed(true)} />
+      : item.category.name.slice(0, 1)}
+  </div>;
 }

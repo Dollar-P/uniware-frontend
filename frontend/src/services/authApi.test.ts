@@ -1,5 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-const request = { first_name: 'Putter', last_name: 'Smith', email: 'putter@chula.ac.th', password: 'unusual phrase here' };
+const request = {
+  first_name: 'Putter', last_name: 'Smith', email: 'putter@chula.ac.th',
+  password: 'unusual phrase here', data_storage_consent: true,
+};
 describe('registerUser HTTP contract', () => {
   beforeEach(() => {
     vi.resetModules();

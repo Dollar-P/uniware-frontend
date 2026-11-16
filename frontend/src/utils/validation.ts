@@ -21,5 +21,6 @@ export function validateRegistration(data: RegisterFormData): RegisterFormErrors
   else if (/^\d+$/.test(data.password)) errors.password = 'Password cannot be entirely numeric';
   // Django additionally checks common passwords and similarity to user information.
   if ((data.department?.trim().length ?? 0) > 255) errors.department = 'Department must be at most 255 characters';
+  if (!data.data_storage_consent) errors.data_storage_consent = 'Consent to personal data storage is required';
   return errors;
 }

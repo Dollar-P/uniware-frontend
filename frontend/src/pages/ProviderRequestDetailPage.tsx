@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import ApproveConfirmDialog from '../components/requests/ApproveConfirmDialog';
 import ConfirmReturnDialog from '../components/requests/ConfirmReturnDialog';
+import HandoverRecord from '../components/requests/HandoverRecord';
 import LoanDueBadge from '../components/requests/LoanDueBadge';
 import RejectRequestDialog from '../components/requests/RejectRequestDialog';
 import RequestStatusBadge from '../components/requests/RequestStatusBadge';
@@ -161,6 +162,7 @@ export default function ProviderRequestDetailPage({ user, requestId }: { user: R
             )}
             {request.decision_reason && <div className="provider-request-wide"><dt>Decision reason</dt><dd>{request.decision_reason}</dd></div>}
           </dl>
+          <HandoverRecord request={request} viewerId={user.id} />
           <SuspensionNotice equipment={request.equipment} />
           {request.status === 'PENDING' && request.borrower.account_status === 'SUSPENDED' && (
             <p className="provider-request-error" role="status">Approval is unavailable while the borrower account is suspended.</p>

@@ -27,7 +27,7 @@ export async function registerUser(data: RegisterRequest): Promise<RegisterRespo
     const fields: RegisterFormErrors = {};
     const details = payload?.error?.details;
     if (details && !Array.isArray(details)) {
-      for (const field of ['first_name', 'last_name', 'email', 'password', 'department'] as const) {
+      for (const field of ['first_name', 'last_name', 'email', 'password', 'department', 'data_storage_consent'] as const) {
         if (Array.isArray(details[field])) fields[field] = details[field].join(' ');
       }
     }

@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { validateRegistration } from './validation';
-const valid = { first_name: 'Putter', last_name: 'Smith', email: 'putter@chula.ac.th', password: 'unusual phrase here' };
+const valid = {
+  first_name: 'Putter', last_name: 'Smith', email: 'putter@chula.ac.th',
+  password: 'unusual phrase here', data_storage_consent: true,
+};
 describe('registration validation', () => {
   it.each(['putter@chula.ac.th', 'abc@student.chula.ac.th', ' USER@ENG.CHULA.AC.TH '])('accepts approved email %s', email => {
     expect(validateRegistration({ ...valid, email })).toEqual({});
@@ -22,5 +25,8 @@ describe('registration validation', () => {
     const errors = validateRegistration({ ...valid, first_name: 'a'.repeat(151), department: 'a'.repeat(256) });
     expect(errors.first_name).toBeDefined();
     expect(errors.department).toBeDefined();
+  });
+  it('requires personal data consent', () => {
+    expect(validateRegistration({ ...valid, data_storage_consent: false }).data_storage_consent).toBeDefined();
   });
 });

@@ -5,7 +5,7 @@ import { validateRegistration } from '../../utils/validation';
 import { RegistrationError } from '../../types/auth';
 import type { RegisterFormData, RegisterFormErrors } from '../../types/auth';
 const emptyForm: RegisterFormData = {
-  first_name: '', last_name: '', email: '', password: '', department: '',
+  first_name: '', last_name: '', email: '', password: '', department: '', data_storage_consent: false,
 };
 const fields = [
   { key: 'first_name', label: 'First name', type: 'text', autoComplete: 'given-name' },
@@ -61,6 +61,19 @@ function RegisterForm() {
           {errors[key] && <p className="form-error" id={`${key}-error`}>{errors[key]}</p>}
         </div>
       ))}
+      <div className="consent-field">
+        <label htmlFor="data_storage_consent">
+          <input id="data_storage_consent" name="data_storage_consent" type="checkbox"
+            disabled={isLoading} checked={form.data_storage_consent}
+            aria-invalid={Boolean(errors.data_storage_consent)}
+            aria-describedby={errors.data_storage_consent ? 'data_storage_consent-error' : undefined}
+            onChange={(event) => setForm({ ...form, data_storage_consent: event.target.checked })} />
+          I explicitly consent to the storage and processing of my personal data (name, university email, and department) for UniWare equipment borrowing.
+        </label>
+        {errors.data_storage_consent && (
+          <p className="form-error" id="data_storage_consent-error">{errors.data_storage_consent}</p>
+        )}
+      </div>
       {apiError && <div className="form-message form-message-error" role="alert">{apiError}</div>}
       {successMessage && <div className="form-message form-message-success" role="status">{successMessage}</div>}
       <button className="register-button" type="submit" disabled={isLoading}>

@@ -154,6 +154,10 @@ Frontend ใช้ **Hash Navigation** ใน `App.tsx` ยังไม่ได
 #my-equipment
 #provider-requests
 #provider-requests/<request-id>
+#provider-returns        # US7-1 return queue (provider)
+#my-requests
+#my-requests/<request-id>
+#my-loans                # US8-1 active loans (borrower)
 #account
 ```
 
@@ -169,6 +173,11 @@ Frontend ปัจจุบันเรียก Service Functions ดังน�
 | `getProviderRequest(id)` | `GET /api/provider/requests/{id}` | Proposed; confirm with Backend |
 | `approveProviderRequest(id)` | `POST /api/provider/requests/{id}/approve` | Proposed; confirm with Backend |
 | `rejectProviderRequest(id, reason)` | `POST /api/provider/requests/{id}/reject` | Proposed; confirm with Backend |
+| `listProviderActiveLoans()` (US7-1) | `GET /api/provider/requests?status=CHECKED_OUT` | Proposed; confirm with Backend |
+| `confirmProviderReturn(id)` (US7-1) | `POST /api/provider/requests/{id}/return` → `COMPLETED` + `returned_at`; 409 if not `CHECKED_OUT`, 403/404 for another provider | Proposed; confirm with Backend |
+| `listMyActiveLoans()` (US8-1) | `GET /api/requests/borrow-requests/mine/?status=CHECKED_OUT` (server must filter by status and owner) | Proposed; confirm with Backend |
+
+`due_date` เป็น exclusive end date: หน้า Borrower (US8-1) แสดง "Return by" เป็นวันก่อน `due_date` และถือว่า Overdue ตั้งแต่วัน `due_date` เป็นต้นไป
 
 ก่อนเปิด Real API ต้องยืนยันกับ Backend Owner เรื่อง **Endpoint / trailing slash, Response Fields, Pagination, Reject Body (`reason` หรือ `decision_reason`), Error Shape และ CSRF**
 

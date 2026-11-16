@@ -1,6 +1,7 @@
 import { STATUS_LABELS } from '../../types/equipment';
 import type { Equipment } from '../../types/equipment';
 import ArchiveEquipmentAction from './ArchiveEquipmentAction';
+import SuspensionNotice from './SuspensionNotice';
 
 /** Shared list row for US2-2 (provider inventory) and, later, the US3-1 catalog. */
 export default function EquipmentCard({ equipment, onEdit, onArchived }: {
@@ -14,6 +15,7 @@ export default function EquipmentCard({ equipment, onEdit, onArchived }: {
         <h3 className="equipment-card-name">{equipment.name}</h3>
         <p className="equipment-card-asset">{equipment.asset_id}</p>
         {equipment.model && <p className="equipment-card-model">{equipment.model}</p>}
+        <SuspensionNotice equipment={equipment} />
       </div>
       <dl className="equipment-card-meta">
         <div><dt>Category</dt><dd>{equipment.category.name}</dd></div>

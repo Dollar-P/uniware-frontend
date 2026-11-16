@@ -1,5 +1,6 @@
 import { STATUS_LABELS } from '../../types/equipment';
 import type { Equipment } from '../../types/equipment';
+import SuspensionNotice from './SuspensionNotice';
 
 export default function EquipmentDetails({ equipment }: { equipment: Equipment }) {
   return (
@@ -13,10 +14,14 @@ export default function EquipmentDetails({ equipment }: { equipment: Equipment }
           {STATUS_LABELS[equipment.status]}
         </span>
       </header>
+      <SuspensionNotice equipment={equipment} />
       <dl className="equipment-details-list">
         <div><dt>Model</dt><dd>{equipment.model || 'Not specified'}</dd></div>
         <div><dt>Category</dt><dd>{equipment.category.name}</dd></div>
         <div><dt>Location</dt><dd>{equipment.location.name}</dd></div>
+        <div><dt>Owner</dt><dd>{equipment.owner.name}</dd></div>
+        <div><dt>Owner email</dt><dd><a href={`mailto:${equipment.owner.email}`}>{equipment.owner.email}</a></dd></div>
+        <div><dt>Owner department</dt><dd>{equipment.owner.department || 'Not specified'}</dd></div>
         <div><dt>Description</dt><dd>{equipment.description || 'No description provided.'}</dd></div>
       </dl>
     </article>

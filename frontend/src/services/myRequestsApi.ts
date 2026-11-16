@@ -30,12 +30,24 @@ function normalizePage(payload: MyBorrowRequestPage | MyBorrowRequest[]): MyBorr
 
 /** US4-3: every borrow request made by the signed-in borrower.
  *  The server scopes this to request.user, so there is no borrower parameter to pass. */
-export async function listMyBorrowRequests(page = 1): Promise<MyBorrowRequestPage> {
-  const response = await fetch(`${requestsPath}/mine/?page=${page}`, {
+export async function listMyBorrowRequests(page = 1, status = 'ALL'): Promise<MyBorrowRequestPage> {
+  const query = new URLSearchParams({ page: String(page) });
+  if (status !== 'ALL') query.set('status', status);
+  const response = await fetch(`${requestsPath}/mine/?${query}`, {
     credentials: 'include',
     cache: 'no-store',
   });
   return normalizePage(await readJson<MyBorrowRequestPage | MyBorrowRequest[]>(response, 'Unable to load your borrow requests. Please try again.'));
+}
+
+/** US8-1: the signed-in borrower's active loans (CHECKED_OUT). The server applies both the
+ *  ownership scope and the status filter; completed loans and other users' loans never arrive. */
+export async function listMyActiveLoans(page = 1): Promise<MyBorrowRequestPage> {
+  const response = await fetch(`${requestsPath}/mine/?page=${page}&status=CHECKED_OUT`, {
+    credentials: 'include',
+    cache: 'no-store',
+  });
+  return normalizePage(await readJson<MyBorrowRequestPage | MyBorrowRequest[]>(response, 'Unable to load your active loans. Please try again.'));
 }
 
 /** US4-3: one of the borrower's own requests. Another borrower's id is scoped out of the
@@ -67,6 +79,14 @@ export async function updateMyBorrowRequest(
     body: JSON.stringify({ ...changes, purpose: changes.purpose.trim() }),
   });
   return readJson<MyBorrowRequest>(response, 'Unable to update this borrow request.');
+}
+
+/** A borrower confirms pickup of their approved request. */
+export async function checkoutMyBorrowRequest(id: string): Promise<MyBorrowRequest> {
+  const response = await fetch(`${requestsPath}/${encodeURIComponent(id)}/checkout/`, {
+    method: 'POST', credentials: 'include', headers: csrfHeaders(),
+  });
+  return readJson<MyBorrowRequest>(response, 'Unable to check out this request.');
 }
 
 /** Cancellation is a status transition, not a DELETE: keep the request in history. */

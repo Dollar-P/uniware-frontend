@@ -23,6 +23,11 @@
 .provider-request-status-pending { color: #98660c; } .provider-request-status-approved, .provider-request-status-completed { color: var(--color-success); }
 .provider-request-status-rejected, .provider-request-status-cancelled { color: var(--color-error); }
 .provider-request-status-checked_out { color: var(--color-primary); }
+/* US7-1 / US8-1 loan due-date badge */
+.loan-due { padding: 5px 12px; border-radius: 40px; border: 1px solid currentColor; font-size: 12px; white-space: nowrap; }
+.loan-due-on-track { color: var(--color-success); }
+.loan-due-due-soon, .loan-due-due-today { color: #98660c; }
+.loan-due-overdue { color: var(--color-error); background: #f9e8e8; font-weight: 550; }
 .provider-request-empty { border: 1px dashed #aba8a5; border-radius: 16px; padding: 48px 20px; text-align: center; }
 .provider-request-empty h2 { margin: 0 0 12px; }
 .provider-request-error, .provider-request-success { border-radius: 10px; padding: 12px 16px; margin: 0; }
@@ -39,3 +44,18 @@
 .provider-request-label { display: block; }
 .provider-request-dialog .provider-request-actions { justify-content: flex-end; }
 @media (max-width: 700px) { .provider-request-card { flex-direction: column; align-items: flex-start; } .provider-request-detail-grid { grid-template-columns: 1fr; } .provider-request-wide { grid-column: auto; } }
+
+.provider-request-borrower-suspended { color: #b91c1c; font-weight: 700; }
+
+.provider-request-card-actions { display: flex; flex-direction: column; align-items: stretch; gap: 9px; min-width: 135px; }
+.provider-request-card-actions .provider-request-button { width: 100%; }
+.provider-request-card-actions .provider-request-error { max-width: 240px; }
+.provider-request-status-returned { color: var(--color-success); }
+@media (max-width: 700px) { .provider-request-card-actions { width: 100%; } }
+
+/* Sorting is performed by Django before pagination, not per visible page. */
+.provider-request-sort-hint {
+  margin: 0.5rem 0 1rem;
+  color: var(--text-secondary, #637083);
+  font-size: 0.875rem;
+}

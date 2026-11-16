@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { providerRequestFixtures } from '../test/fixtures/providerRequests';
 import { ProviderRequestError } from '../types/borrowRequest';
-import { approveProviderRequest, getProviderRequest, listProviderRequests, rejectProviderRequest } from './providerRequestsApi';
+import { approveProviderRequest, confirmProviderReturn, getProviderRequest, listProviderActiveLoans, listProviderRequests, rejectProviderRequest, returnProviderRequest } from './providerRequestsApi';
 
 const fixture = providerRequestFixtures[0];
 
@@ -57,6 +57,18 @@ describe('Provider Requests HTTP contract with Django backend', () => {
     });
   });
 
+  it('POSTs a return condition and receives RETURNED status', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(jsonResponse({ ...fixture, status: 'RETURNED', return_condition: 'Intact' }));
+    const result = await returnProviderRequest(fixture.id, ' Intact ');
+    expect(result.status).toBe('RETURNED');
+    expect(result.return_condition).toBe('Intact');
+    expect(fetch).toHaveBeenCalledWith(`/api/provider/requests/${fixture.id}/return`, {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': 'test-csrf-value' },
+      body: '{"return_condition":"Intact"}',
+    });
+  });
+
   it('preserves backend 409 BOOKING_CONFLICT error code and message', async () => {
     vi.mocked(fetch).mockResolvedValueOnce(jsonResponse({ error: { code: 'BOOKING_CONFLICT', message: 'Equipment is no longer available.' } }, 409));
     await expect(approveProviderRequest(fixture.id)).rejects.toMatchObject({
@@ -67,5 +79,40 @@ describe('Provider Requests HTTP contract with Django backend', () => {
   it('preserves backend 400 validation errors for missing rejection reason', async () => {
     vi.mocked(fetch).mockResolvedValueOnce(jsonResponse({ error: { code: 'VALIDATION_ERROR', message: 'This field may not be blank.' } }, 400));
     await expect(rejectProviderRequest(fixture.id, '  ')).rejects.toMatchObject({ status: 400, code: 'VALIDATION_ERROR' });
+  });
+});
+
+describe('US7-1 return HTTP contract', () => {
+  it('GETs the provider-scoped CHECKED_OUT loans as the active loans awaiting return', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(jsonResponse({ count: 0, next: null, previous: null, results: [] }));
+    await listProviderActiveLoans(2);
+    expect(fetch).toHaveBeenCalledWith('/api/provider/requests?page=2&status=CHECKED_OUT', {
+      credentials: 'include', cache: 'no-store',
+    });
+  });
+
+  it('POSTs the confirm-return action with session and CSRF and returns the completed loan', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(jsonResponse({
+      ...fixture, borrower: 'borrower-uuid', status: 'COMPLETED', returned_at: '2026-10-23T10:00:00Z',
+    }));
+    const result = await confirmProviderReturn(fixture.id);
+    expect(result).toMatchObject({ status: 'COMPLETED', returned_at: '2026-10-23T10:00:00Z', borrower: { id: 'borrower-uuid' } });
+    expect(fetch).toHaveBeenCalledWith(`/api/provider/requests/${fixture.id}/return`, {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': 'test-csrf-value' },
+      body: '{}',
+    });
+  });
+
+  it('preserves a 409 for a duplicate return or invalid state', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(jsonResponse({ error: { code: 'INVALID_STATE_TRANSITION', message: 'This loan has already been returned.' } }, 409));
+    await expect(confirmProviderReturn(fixture.id)).rejects.toMatchObject({
+      name: 'ProviderRequestError', status: 409, code: 'INVALID_STATE_TRANSITION', message: 'This loan has already been returned.',
+    });
+  });
+
+  it('preserves a 403 for a provider who does not own the equipment', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(jsonResponse({ error: { code: 'PERMISSION_DENIED', message: 'Forbidden' } }, 403));
+    await expect(confirmProviderReturn(fixture.id)).rejects.toMatchObject({ status: 403, code: 'PERMISSION_DENIED' });
   });
 });

@@ -134,3 +134,18 @@ describe('equipment API', () => {
     await expect(listMyEquipment()).rejects.toBeInstanceOf(EquipmentError);
   });
 });
+
+it('sends photo uploads and removals in one multipart update without overriding the browser boundary', async () => {
+  const api = await import('./equipmentApi');
+  const mock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({ id: 'eq' }), { status: 200 }));
+  const photo = new File(['image'], 'image.png', { type: 'image/png' });
+  await api.updateEquipment('eq', { name: 'Camera' }, { files: [null, photo, null], removed: [1, 3] });
+  const init = mock.mock.calls[0][1]!;
+  expect(init.body).toBeInstanceOf(FormData);
+  const data = init.body as FormData;
+  expect(data.get('name')).toBe('Camera');
+  expect(data.get('photo_2')).toBe(photo);
+  expect(data.getAll('remove_photos')).toEqual(['1', '3']);
+  expect((init.headers as Record<string, string>)['Content-Type']).toBeUndefined();
+  mock.mockRestore();
+});

@@ -24,7 +24,10 @@ export interface EquipmentOwner {
   department: string;
 }
 
+export interface EquipmentPhoto { slot: number; preview_url: string; original_url: string }
+
 export interface Equipment {
+  photos?: EquipmentPhoto[];
   id: string;
   asset_id: string;
   name: string;

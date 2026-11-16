@@ -1,3 +1,4 @@
+import { photoUrl } from '../../services/equipmentApi';
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { createEquipment, listCategories, listLocations, updateEquipment } from '../../services/equipmentApi';
@@ -21,6 +22,8 @@ export default function EquipmentForm({ equipment, onSaved, onCancel }: {
     location_id: equipment?.location.id ?? '',
     status: (equipment?.status as ProviderSettableStatus) ?? 'AVAILABLE',
   });
+  const [files, setFiles] = useState<(File | null)[]>([null, null, null]);
+  const [removed, setRemoved] = useState<number[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [errors, setErrors] = useState<EquipmentFormErrors>({});
@@ -69,8 +72,8 @@ export default function EquipmentForm({ equipment, onSaved, onCancel }: {
         description: form.description?.trim() ?? '',
       };
       const saved = equipment
-        ? await updateEquipment(equipment.id, payload)
-        : await createEquipment(payload);
+        ? await updateEquipment(equipment.id, payload, { files, removed })
+        : await createEquipment(payload, { files, removed });
       onSaved(saved);
     } catch (cause) {
       if (cause instanceof EquipmentError) {
@@ -161,6 +164,29 @@ export default function EquipmentForm({ equipment, onSaved, onCancel }: {
         <textarea id="equipment-description" name="description" rows={3} value={form.description}
           onChange={event => update('description', event.target.value)} disabled={disabled} />
       </div>
+
+      <fieldset className="equipment-photo-fields">
+        <legend>Equipment photos</legend>
+        <p>Add up to three JPEG, PNG or WebP photos, each up to 20 MiB.</p>
+        {[1, 2, 3].map(slot => {
+          const existing = equipment?.photos?.find(photo => photo.slot === slot);
+          const deleted = removed.includes(slot);
+          return <div className="equipment-photo-field" key={slot}>
+            <label htmlFor={`photo-${slot}`}>Photo {slot}{existing && !deleted ? ' · current photo' : ''}</label>
+            {existing && !deleted && <img src={photoUrl(existing.preview_url)} alt={`Current photo ${slot}`} />}
+            <input id={`photo-${slot}`} type="file" accept="image/jpeg,image/png,image/webp" disabled={disabled} onChange={event => {
+              const file = event.target.files?.[0] ?? null;
+              setFiles(current => current.map((value, index) => index === slot - 1 ? file : value));
+              if (file) setRemoved(current => current.filter(value => value !== slot));
+            }} />
+            {files[slot - 1] && <p>Selected: {files[slot - 1]?.name}</p>}
+            {existing && <button type="button" className="register-button button-secondary" disabled={disabled} onClick={() => {
+              setFiles(current => current.map((value, index) => index === slot - 1 ? null : value));
+              setRemoved(current => current.includes(slot) ? current.filter(value => value !== slot) : [...current, slot]);
+            }}>{deleted ? 'Undo removal' : 'Remove photo'}</button>}
+          </div>;
+        })}
+      </fieldset>
 
       {error && <p className="form-message form-message-error" role="alert">{error}</p>}
 

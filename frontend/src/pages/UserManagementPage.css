@@ -19,3 +19,8 @@
   margin-left: auto;
   margin-right: auto;
 }
+/* US8-1 user search */
+.user-search { display: flex; align-items: end; gap: 12px; flex-wrap: wrap; margin: 22px 0 6px; }
+.user-search label { width: 100%; font-weight: 600; }
+.user-search input { min-width: 220px; flex: 1; padding: 10px; border: 1px solid #cbd5e1; border-radius: 7px; font: inherit; }
+.user-search-result { margin: 14px 0 0; color: #475569; }

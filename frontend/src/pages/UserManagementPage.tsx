@@ -17,13 +17,17 @@ export default function UserManagementPage({ user }: { user: RegisterResponse })
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [saving, setSaving] = useState<string | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [search, setSearch] = useState('');
 
   async function refresh() {
     setLoading(true);
     setError('');
+    setLoadFailed(false);
     try {
       setUsers(await listUsers());
     } catch (e) {
+      setLoadFailed(true);
       setError(e instanceof Error ? e.message : 'Unable to load users.');
     } finally {
       setLoading(false);
@@ -43,6 +47,9 @@ export default function UserManagementPage({ user }: { user: RegisterResponse })
       setError('You cannot remove your own admin role.');
       return;
     }
+    // US8-2: a role change takes effect at once, so ask before sending it.
+    const label = roles.find(role => role.key === key)?.label ?? key;
+    if (!window.confirm(`${next ? 'Grant' : 'Remove'} the ${label} role ${next ? 'to' : 'from'} ${target.first_name} ${target.last_name} (${target.email})?`)) return;
     setSaving(target.id);
     setError('');
     setNotice('');
@@ -65,6 +72,8 @@ export default function UserManagementPage({ user }: { user: RegisterResponse })
         return;
       }
       if (!window.confirm(`Suspend ${target.first_name} ${target.last_name} (${target.email})? Their existing sessions will be revoked, all equipment they own will be suspended, and they will be unable to log in.`)) return;
+    } else if (!window.confirm(`Reactivate ${target.first_name} ${target.last_name} (${target.email})? They will be able to log in again.`)) {
+      return;
     }
     setSaving(target.id);
     setError('');
@@ -80,6 +89,13 @@ export default function UserManagementPage({ user }: { user: RegisterResponse })
     }
   }
 
+  // GET /api/auth/users returns every account and takes no search parameter, so the
+  // US8-1 search filters the loaded list by name or email here.
+  const keyword = search.trim().toLowerCase();
+  const visibleUsers = keyword
+    ? users.filter(account => `${account.first_name} ${account.last_name} ${account.email}`.toLowerCase().includes(keyword))
+    : users;
+
   return (
     <main className="user-management-page">
       <header className="user-management-header">
@@ -89,13 +105,22 @@ export default function UserManagementPage({ user }: { user: RegisterResponse })
       <section className="user-management-panel">
         <h1>User management</h1>
         <p>Manage roles and suspend or reactivate accounts. Changes are saved immediately.</p>
+        <div className="user-search" role="search">
+          <label htmlFor="user-search">Search name or email</label>
+          <input id="user-search" type="search" value={search} placeholder="Name or email"
+            onChange={event => setSearch(event.target.value)} />
+          <button className="register-button button-secondary" type="button" disabled={!search}
+            onClick={() => setSearch('')}>Clear search</button>
+        </div>
         {error && <p role="alert" className="user-management-error">{error}</p>}
         {notice && <p role="status" className="user-management-notice">{notice}</p>}
-        {loading ? <p role="status">Loading users…</p> : (
+        {loading ? <p role="status">Loading users…</p> : loadFailed ? (
+          <button className="register-button" type="button" onClick={() => void refresh()}>Try again</button>
+        ) : (
           <div className="user-table-wrap">
             <table>
               <thead><tr><th>User</th><th>Email</th><th>Department</th><th>Roles</th><th>Status</th><th>Actions</th><th>Joined</th></tr></thead>
-              <tbody>{users.map(account => (
+              <tbody>{visibleUsers.map(account => (
                 <tr key={account.id}>
                   <td>{account.first_name} {account.last_name}</td>
                   <td>{account.email}</td>
@@ -126,6 +151,13 @@ export default function UserManagementPage({ user }: { user: RegisterResponse })
               ))}</tbody>
             </table>
             {users.length === 0 && <p>No user accounts found.</p>}
+            {users.length > 0 && keyword && (
+              <p className="user-search-result">
+                {visibleUsers.length === 0
+                  ? `No users match "${search.trim()}".`
+                  : `Showing ${visibleUsers.length} of ${users.length} accounts.`}
+              </p>
+            )}
           </div>
         )}
       </section>

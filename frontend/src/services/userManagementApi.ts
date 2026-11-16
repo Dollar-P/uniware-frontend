@@ -1,9 +1,10 @@
+import type { Paginated } from '../types/equipment';
 import type { RegisterResponse, ApiError } from '../types/auth';
 
 const baseUrl = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
 export type UserRoles = Pick<RegisterResponse, 'is_admin' | 'is_provider' | 'is_borrower'>;
 
-async function request(path: string, init: RequestInit = {}): Promise<RegisterResponse[] | RegisterResponse> {
+async function request(path: string, init: RequestInit = {}): Promise<Paginated<RegisterResponse> | RegisterResponse> {
   const token = document.cookie.split('; ').find(value => value.startsWith('csrftoken='));
   const headers: Record<string, string> = { 'Content-Type': 'application/json', ...(init.headers as Record<string, string> | undefined) };
   if (token) headers['X-CSRFToken'] = decodeURIComponent(token.slice('csrftoken='.length));
@@ -15,8 +16,9 @@ async function request(path: string, init: RequestInit = {}): Promise<RegisterRe
   }
   return response.json();
 }
-export async function listUsers(): Promise<RegisterResponse[]> {
-  return await request('') as RegisterResponse[];
+export async function listUsers(page = 1, search = ''): Promise<Paginated<RegisterResponse>> {
+  const query = new URLSearchParams({ page: String(page), search: search.trim() });
+  return await request(`?${query}`) as Paginated<RegisterResponse>;
 }
 export async function updateUserRoles(id: string, roles: Partial<UserRoles>): Promise<RegisterResponse> {
   return await request(`/${encodeURIComponent(id)}/roles`, { method: 'PATCH', body: JSON.stringify(roles) }) as RegisterResponse;

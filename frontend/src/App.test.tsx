@@ -5,7 +5,9 @@ import App from './App';
 import { currentUser, login, logout } from './services/sessionApi';
 import type { RegisterResponse } from './types/auth';
 import * as equipmentApi from './services/equipmentApi';
+import { listUsers } from './services/userManagementApi';
 vi.mock('./services/sessionApi', () => ({ currentUser: vi.fn(), login: vi.fn(), logout: vi.fn() }));
+vi.mock('./services/userManagementApi', () => ({ listUsers: vi.fn(), updateUserRoles: vi.fn(), updateUserStatus: vi.fn() }));
 const account: RegisterResponse = {
   id: 'uuid', email: 'user@chula.ac.th', first_name: 'Test', last_name: 'User',
   department: '', is_admin: false, is_provider: true, is_borrower: true,
@@ -142,3 +144,30 @@ describe('session navigation', () => {
     await waitFor(() => expect(screen.getByText('Welcome, Test')).toBeInTheDocument());
   });
 });
+
+describe('admin routes', () => {
+  beforeEach(() => { vi.mocked(listUsers).mockReset(); });
+  afterEach(() => { vi.restoreAllMocks(); });
+  it('keeps a signed-in admin on user management instead of sending them to the account page', async () => {
+    window.location.hash = 'user-management';
+    vi.mocked(currentUser).mockResolvedValue({ ...account, is_admin: true });
+    vi.mocked(listUsers).mockResolvedValue({ count: 0, next: null, previous: null, results: [] });
+    render(<App />);
+    expect(await screen.findByRole('heading', { name: 'User management' })).toBeInTheDocument();
+    expect(window.location.hash).toBe('#user-management');
+  });
+  it('sends a signed-out visitor from an admin page to sign in', async () => {
+    window.location.hash = 'admin-equipment';
+    vi.mocked(currentUser).mockResolvedValue(null);
+    render(<App />);
+    await waitFor(() => expect(window.location.hash).toBe('#login'));
+  });
+  it('refuses a signed-in user who is not an admin', async () => {
+    window.location.hash = 'user-management';
+    vi.mocked(currentUser).mockResolvedValue(account);
+    render(<App />);
+    expect(await screen.findByRole('heading', { name: 'Admin access required' })).toBeInTheDocument();
+    expect(listUsers).not.toHaveBeenCalled();
+  });
+});
+

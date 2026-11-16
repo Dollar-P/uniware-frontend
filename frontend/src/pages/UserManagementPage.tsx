@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { RegisterResponse } from '../types/auth';
 import { listUsers, updateUserRoles, updateUserStatus } from '../services/userManagementApi';
 import uniwareLogo from '../assets/brand/uniware-logo.svg';
@@ -17,25 +17,39 @@ export default function UserManagementPage({ user }: { user: RegisterResponse })
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [saving, setSaving] = useState<string | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [search, setSearch] = useState('');
 
-  async function refresh() {
+  const [page, setPage] = useState(1);
+  const [query, setQuery] = useState('');
+  const [count, setCount] = useState(0);
+  const [hasNext, setHasNext] = useState(false);
+  const generation = useRef(0);
+  const refresh = useCallback(async () => {
+    const version = ++generation.current;
     setLoading(true);
     setError('');
+    setLoadFailed(false);
     try {
-      setUsers(await listUsers());
+      const result = await listUsers(page, query);
+      if (version !== generation.current) return;
+      setUsers(result.results); setCount(result.count); setHasNext(Boolean(result.next));
     } catch (e) {
+      if (version !== generation.current) return;
+      setLoadFailed(true);
       setError(e instanceof Error ? e.message : 'Unable to load users.');
     } finally {
-      setLoading(false);
+      if (version === generation.current) setLoading(false);
     }
-  }
+  }, [page, query]);
 
   useEffect(() => {
     document.title = 'User management · UniWare';
     // Fetching the table is an intentional effect when this page first mounts.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void refresh();
-  }, []);
+    return () => { generation.current += 1; };
+  }, [refresh]);
 
   async function toggleRole(target: RegisterResponse, key: RoleKey) {
     const next = !target[key];
@@ -43,6 +57,9 @@ export default function UserManagementPage({ user }: { user: RegisterResponse })
       setError('You cannot remove your own admin role.');
       return;
     }
+    // US8-2: a role change takes effect at once, so ask before sending it.
+    const label = roles.find(role => role.key === key)?.label ?? key;
+    if (!window.confirm(`${next ? 'Grant' : 'Remove'} the ${label} role ${next ? 'to' : 'from'} ${target.first_name} ${target.last_name} (${target.email})?`)) return;
     setSaving(target.id);
     setError('');
     setNotice('');
@@ -65,6 +82,8 @@ export default function UserManagementPage({ user }: { user: RegisterResponse })
         return;
       }
       if (!window.confirm(`Suspend ${target.first_name} ${target.last_name} (${target.email})? Their existing sessions will be revoked, all equipment they own will be suspended, and they will be unable to log in.`)) return;
+    } else if (!window.confirm(`Reactivate ${target.first_name} ${target.last_name} (${target.email})? They will be able to log in again.`)) {
+      return;
     }
     setSaving(target.id);
     setError('');
@@ -89,9 +108,19 @@ export default function UserManagementPage({ user }: { user: RegisterResponse })
       <section className="user-management-panel">
         <h1>User management</h1>
         <p>Manage roles and suspend or reactivate accounts. Changes are saved immediately.</p>
+        <form className="user-search" role="search" onSubmit={event => { event.preventDefault(); setPage(1); setQuery(search.trim()); }}>
+          <label htmlFor="user-search">Search name or email</label>
+          <input id="user-search" type="search" value={search} placeholder="Name or email"
+            onChange={event => setSearch(event.target.value)} />
+          <button className="register-button" type="submit">Search</button>
+          <button className="register-button button-secondary" type="button" disabled={!search && !query}
+            onClick={() => { setSearch(''); setQuery(''); setPage(1); }}>Clear search</button>
+        </form>
         {error && <p role="alert" className="user-management-error">{error}</p>}
         {notice && <p role="status" className="user-management-notice">{notice}</p>}
-        {loading ? <p role="status">Loading users…</p> : (
+        {loading ? <p role="status">Loading users…</p> : loadFailed ? (
+          <button className="register-button" type="button" onClick={() => void refresh()}>Try again</button>
+        ) : (
           <div className="user-table-wrap">
             <table>
               <thead><tr><th>User</th><th>Email</th><th>Department</th><th>Roles</th><th>Status</th><th>Actions</th><th>Joined</th></tr></thead>
@@ -125,7 +154,13 @@ export default function UserManagementPage({ user }: { user: RegisterResponse })
                 </tr>
               ))}</tbody>
             </table>
-            {users.length === 0 && <p>No user accounts found.</p>}
+            {users.length === 0 && <p>{query ? `No users match "${query}".` : 'No user accounts found.'}</p>}
+            <p>{count} accounts</p>
+            <nav aria-label="User pages">
+              <button disabled={page <= 1 || loading} onClick={() => setPage(value => value - 1)}>Previous</button>
+              <span>Page {page}</span>
+              <button disabled={!hasNext || loading} onClick={() => setPage(value => value + 1)}>Next</button>
+            </nav>
           </div>
         )}
       </section>

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import RequestStatusBadge from '../components/requests/RequestStatusBadge';
 import SuspensionNotice from '../components/equipment/SuspensionNotice';
 import BorrowerRequestActions from '../components/requests/BorrowerRequestActions';
-import { checkoutMyBorrowRequest, getMyBorrowRequest } from '../services/myRequestsApi';
+import { getMyBorrowRequest } from '../services/myRequestsApi';
 import LoanDueBadge from '../components/requests/LoanDueBadge';
 import { dateLabel, MY_REQUEST_STATUS_HELP, MyRequestError } from '../types/borrowRequest';
 import type { MyBorrowRequest } from '../types/borrowRequest';
@@ -21,8 +21,6 @@ export default function MyRequestDetailPage({ user, requestId }: { user: Registe
   const [loading, setLoading] = useState(canBorrow);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [checkoutBusy, setCheckoutBusy] = useState(false);
-  const [checkoutError, setCheckoutError] = useState('');
   const [missing, setMissing] = useState(false);
   const [denied, setDenied] = useState(false);
 
@@ -48,18 +46,6 @@ export default function MyRequestDetailPage({ user, requestId }: { user: Registe
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void load();
   }, [canBorrow, load]);
-
-  async function checkout() {
-    if (!request || request.status !== 'APPROVED' || request.equipment.is_suspended) return;
-    setCheckoutBusy(true);
-    setCheckoutError('');
-    setSuccess('');
-    try {
-      setRequest(await checkoutMyBorrowRequest(request.id));
-      setSuccess('Equipment checked out successfully.');
-    } catch (cause) { setCheckoutError(cause instanceof Error ? cause.message : 'Unable to check out.'); }
-    finally { setCheckoutBusy(false); }
-  }
 
   if (!canBorrow || denied) return (
     <main className="provider-request-page"><MyRequestsHeader />
@@ -116,13 +102,9 @@ export default function MyRequestDetailPage({ user, requestId }: { user: Registe
               )}
             </dl>
             {success && <p role="status" className="provider-request-success">{success}</p>}
-            {checkoutError && <p role="alert" className="provider-request-error">{checkoutError}</p>}
-            {request.status === 'APPROVED' && !request.equipment.is_suspended && (
-              <button type="button" className="provider-request-button provider-request-button-primary provider-request-button-refresh"
-                disabled={checkoutBusy} onClick={() => void checkout()}>
-                {checkoutBusy ? 'Checking out...' : 'Check out'}
-              </button>
-            )}
+            {request.status === 'APPROVED' && <p>The provider will confirm handover when you collect the equipment.</p>}
+            {request.checkout_record && <p>Picked up at {new Date(request.checkout_record.checkout_at).toLocaleString('en-GB')}</p>}
+            <button className="provider-request-button" onClick={() => void load()}>Refresh status</button>
             <BorrowerRequestActions key={[request.id, request.status, request.pickup_date, request.due_date, request.purpose].join(':')} request={request} onChanged={(updated, message) => {
               setRequest(updated);
               setSuccess(message);

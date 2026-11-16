@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { listAdminEquipment, updateEquipmentSuspension } from '../services/equipmentApi';
+import { disableEquipment, listAdminEquipment, updateEquipmentSuspension } from '../services/equipmentApi';
 import type { Equipment } from '../types/equipment';
 import uniwareLogo from '../assets/brand/uniware-logo.svg';
 import './UserManagementPage.css';
@@ -43,6 +43,18 @@ export default function AdminEquipmentPage() {
     } catch (e) { setError(e instanceof Error ? e.message : 'Unable to change suspension.'); }
     finally { setSaving(''); }
   }
+  async function disable(item: Equipment) {
+    const reason = window.prompt(`Reason for disabling ${item.name}:`);
+    if (!reason?.trim()) return;
+    if (!window.confirm(`Disable ${item.name}? It will be hidden from the catalog. Existing loans and history will be retained.`)) return;
+    setSaving(item.id); setError(''); setNotice('');
+    try {
+      const updated = await disableEquipment(item.id, reason.trim());
+      setItems(current => current.map(value => value.id === item.id ? updated : value));
+      setNotice(`${item.name} listing disabled.`);
+    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Unable to disable listing.'); }
+    finally { setSaving(''); }
+  }
   return <main className="user-management-page">
     <header className="user-management-header"><img src={uniwareLogo} alt="UniWare" />
       <nav><a href="#account">Account</a><a href="#catalog">Catalog</a><a href="#user-management">User management</a></nav>
@@ -65,7 +77,8 @@ export default function AdminEquipmentPage() {
             {item.is_suspended && <p className="equipment-suspension-notice">{item.suspension_reason}</p>}
           </div>
           <div className="admin-equipment-controls">
-            {reasonId === item.id ? <div className="admin-equipment-reason">
+            {item.disabled_at ? <p>Listing disabled</p> : <button className="register-button" disabled={Boolean(saving)} onClick={() => void disable(item)}>Disable listing</button>}
+            {!item.disabled_at && (reasonId === item.id ? <div className="admin-equipment-reason">
               <label htmlFor={`reason-${item.id}`}>Suspension reason (required)</label>
               <textarea id={`reason-${item.id}`} maxLength={1000} value={reason} onChange={event => setReason(event.target.value)} />
               <button className="register-button" type="button" disabled={Boolean(saving)} onClick={() => void setSuspension(item, true)}>Confirm suspension</button>
@@ -73,7 +86,7 @@ export default function AdminEquipmentPage() {
             </div> : item.admin_suspended ? <>
               <button className="register-button button-secondary" disabled={Boolean(saving)} type="button" onClick={() => void setSuspension(item, false)}>Remove manual hold</button>
               <small>Account suspension cannot be removed here.</small>
-            </> : item.is_suspended ? <small>Automatically suspended because the owner account is suspended. Reactivate the owner account in User Management.</small> : <button className="register-button" disabled={Boolean(saving)} type="button" onClick={() => {setReasonId(item.id);setReason('');}}>Suspend</button>}
+            </> : item.is_suspended ? <small>Automatically suspended because the owner account is suspended. Reactivate the owner account in User Management.</small> : <button className="register-button" disabled={Boolean(saving)} type="button" onClick={() => {setReasonId(item.id);setReason('');}}>Suspend</button>)}
           </div>
         </li>)}</ul>
       )}

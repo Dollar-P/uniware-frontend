@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import RequestCard from '../components/requests/RequestCard';
-import { listProviderRequests } from '../services/providerRequestsApi';
+import { listProviderRequests, listReadyForPickup } from '../services/providerRequestsApi';
 import { ProviderRequestError, REQUEST_FILTER_OPTIONS } from '../types/borrowRequest';
 import type { ProviderBorrowRequest, RequestFilter } from '../types/borrowRequest';
 import type { RegisterResponse } from '../types/auth';
@@ -8,7 +8,7 @@ import uniwareLogo from '../assets/brand/uniware-logo.svg';
 import './ProviderRequests.css';
 
 
-export default function ProviderRequestsPage({ user }: { user: RegisterResponse }) {
+export default function ProviderRequestsPage({ user, readyForPickup = false }: { user: RegisterResponse; readyForPickup?: boolean }) {
   const canManage = user.is_provider && user.account_status === 'ACTIVE';
   const [filter, setFilter] = useState<RequestFilter>('PENDING');
   const [page, setPage] = useState(1);
@@ -23,7 +23,7 @@ export default function ProviderRequestsPage({ user }: { user: RegisterResponse 
     setLoading(true);
     setError('');
     try {
-      const result = await listProviderRequests(targetPage, targetFilter);
+      const result = await (readyForPickup ? listReadyForPickup(targetPage) : listProviderRequests(targetPage, targetFilter));
       setRequests(result.results);
       setCount(result.count);
       setHasNext(Boolean(result.next));
@@ -35,7 +35,7 @@ export default function ProviderRequestsPage({ user }: { user: RegisterResponse 
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [readyForPickup]);
 
   useEffect(() => {
     if (!canManage) return;
@@ -57,12 +57,12 @@ export default function ProviderRequestsPage({ user }: { user: RegisterResponse 
       <ProviderHeader />
       <section className="provider-request-panel" aria-labelledby="provider-inbox-title">
         <header className="provider-request-heading">
-          <div><h1 id="provider-inbox-title">Borrow requests</h1>
-            <p>Review and approve or reject borrowing requests for the equipment you manage.</p></div>
+          <div><h1 id="provider-inbox-title">{readyForPickup ? 'Ready for pickup' : 'Borrow requests'}</h1>
+            <p>{readyForPickup ? 'Approved requests eligible for handover. Open a request to confirm collection.' : 'Review and approve or reject borrowing requests for the equipment you manage.'}</p></div>
           <span>{count} request{count === 1 ? '' : 's'}</span>
         </header>
         <div className="provider-request-tabs" role="group" aria-label="Filter requests">
-          {REQUEST_FILTER_OPTIONS.map(option => (
+          {!readyForPickup && REQUEST_FILTER_OPTIONS.map(option => (
             <button key={option.value} type="button" aria-pressed={filter === option.value}
               onClick={() => { setPage(1); setFilter(option.value); }}>{option.label}</button>
           ))}
@@ -75,7 +75,7 @@ export default function ProviderRequestsPage({ user }: { user: RegisterResponse 
           <div><p role="alert" className="provider-request-error">{error}</p>
             <button className="provider-request-button" onClick={() => void load(page, filter)}>Try again</button></div>
         ) : requests.length === 0 ? (
-          <div className="provider-request-empty"><h2>No {filter === 'ALL' ? '' : `${filter.toLowerCase().replaceAll('_', ' ')} `}requests</h2>
+          <div className="provider-request-empty"><h2>No {readyForPickup ? 'ready-for-pickup ' : filter === 'ALL' ? '' : `${filter.toLowerCase().replaceAll('_', ' ')} `}requests</h2>
             <p>New requests for your equipment will appear here.</p></div>
         ) : <ul className="provider-request-list">{requests.map(request => <RequestCard key={request.id} request={request} onReturned={() => load(page, filter)} />)}</ul>}
         {(page > 1 || hasNext) && !loading && !error && (
@@ -93,6 +93,6 @@ export default function ProviderRequestsPage({ user }: { user: RegisterResponse 
 export function ProviderHeader() {
   return <header className="provider-request-header">
     <img src={uniwareLogo} alt="UniWare" className="uniware-logo" />
-    <nav aria-label="Provider navigation"><a href="#account">Your account</a><a href="#my-equipment">My equipment</a><a href="#provider-requests">Requests</a><a href="#provider-returns">Returns</a></nav>
+    <nav aria-label="Provider navigation"><a href="#account">Your account</a><a href="#my-equipment">My equipment</a><a href="#provider-requests">Requests</a><a href="#provider-pickup">Ready for pickup</a><a href="#provider-returns">Returns</a></nav>
   </header>;
 }

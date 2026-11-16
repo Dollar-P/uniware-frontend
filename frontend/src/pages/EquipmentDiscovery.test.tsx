@@ -123,3 +123,40 @@ describe('equipment discovery integration', () => {
     expect(screen.queryByText('Microscope')).not.toBeInTheDocument();
   });
 });
+
+describe('US8-4 disabled listings are hidden from borrowers', () => {
+  const suspended: Equipment = {
+    ...item, id: 'eq-9', name: 'Broken Drone', admin_suspended: true, is_suspended: true, suspension_reason: 'Misleading photos',
+  };
+  const page = (results: Equipment[]) => ({ results, count: results.length, next: null, previous: null });
+  beforeEach(() => { window.history.replaceState(null, '', '/'); });
+  afterEach(() => { vi.restoreAllMocks(); });
+
+  it('renders the server-filtered page and preserves the server total', async () => {
+    vi.spyOn(api, 'listEquipment').mockResolvedValue({ ...page([item]), count: 25, next: '/api/equipment?page=2' });
+    render(catalog);
+    expect(await screen.findByRole('link', { name: 'View Microscope' })).toBeInTheDocument();
+    expect(screen.getByText('25 items in the catalog')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Next' })).toBeEnabled();
+  });
+
+  it('shows empty only when the filtered server result is empty', async () => {
+    vi.spyOn(api, 'listEquipment').mockResolvedValue(page([]));
+    render(catalog);
+    expect(await screen.findByRole('heading', { name: 'No equipment to show' })).toBeInTheDocument();
+  });
+
+  it('answers not found when a borrower opens a suspended listing by direct link', async () => {
+    vi.spyOn(api, 'getEquipment').mockRejectedValue(new EquipmentError('Not found', {}, 404));
+    render(<EquipmentDetailPage equipmentId={suspended.id} user={user} />);
+    expect(await screen.findByRole('heading', { name: 'Equipment not found' })).toBeInTheDocument();
+    expect(screen.queryByText('Broken Drone')).not.toBeInTheDocument();
+    expect(screen.queryByText('Misleading photos')).not.toBeInTheDocument();
+  });
+
+  it('lets an admin open the same suspended listing', async () => {
+    vi.spyOn(api, 'getEquipment').mockResolvedValue(suspended);
+    render(<EquipmentDetailPage equipmentId={suspended.id} user={{ ...user, is_admin: true }} />);
+    expect(await screen.findByRole('heading', { name: 'Broken Drone' })).toBeInTheDocument();
+  });
+});

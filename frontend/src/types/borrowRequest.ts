@@ -20,7 +20,13 @@ export interface BorrowerInfo {
   account_status?: 'ACTIVE' | 'SUSPENDED';
 }
 
+export interface CheckoutRecord {
+  checkout_at: string;
+  handover_person: BorrowerInfo;
+}
+
 export interface ProviderBorrowRequest {
+  checkout_record?: CheckoutRecord | null;
   id: string;
   borrower: BorrowerInfo;
   equipment: Equipment;
@@ -72,6 +78,7 @@ export function dateLabel(isoDate: string): string {
  *  Mirrors BorrowRequestSerializer in apps/requests/serializers.py, where `borrower`
  *  and `decided_by` are plain primary keys and `equipment` is expanded. */
 export interface MyBorrowRequest {
+  checkout_record?: CheckoutRecord | null;
   id: string;
   borrower: string;
   equipment: Equipment;

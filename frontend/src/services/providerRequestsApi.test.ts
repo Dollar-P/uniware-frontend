@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { providerRequestFixtures } from '../test/fixtures/providerRequests';
 import { ProviderRequestError } from '../types/borrowRequest';
-import { approveProviderRequest, confirmProviderReturn, getProviderRequest, listProviderActiveLoans, listProviderRequests, rejectProviderRequest, returnProviderRequest } from './providerRequestsApi';
+import { checkoutProviderRequest, listReadyForPickup, approveProviderRequest, confirmProviderReturn, getProviderRequest, listProviderActiveLoans, listProviderRequests, rejectProviderRequest, returnProviderRequest } from './providerRequestsApi';
 
 const fixture = providerRequestFixtures[0];
 
@@ -114,5 +114,16 @@ describe('US7-1 return HTTP contract', () => {
   it('preserves a 403 for a provider who does not own the equipment', async () => {
     vi.mocked(fetch).mockResolvedValueOnce(jsonResponse({ error: { code: 'PERMISSION_DENIED', message: 'Forbidden' } }, 403));
     await expect(confirmProviderReturn(fixture.id)).rejects.toMatchObject({ status: 403, code: 'PERMISSION_DENIED' });
+  });
+});
+
+it('loads server-filtered pickup pages and sends only an empty handover payload with CSRF', async () => {
+  vi.mocked(fetch).mockResolvedValueOnce(jsonResponse({ count: 1, next: null, previous: null, results: [fixture] }));
+  await listReadyForPickup(2);
+  expect(fetch).toHaveBeenLastCalledWith('/api/provider/requests/ready-for-pickup?page=2', { credentials: 'include', cache: 'no-store' });
+  vi.mocked(fetch).mockResolvedValueOnce(jsonResponse({ ...fixture, status: 'CHECKED_OUT' }));
+  await checkoutProviderRequest(fixture.id);
+  expect(fetch).toHaveBeenLastCalledWith(`/api/provider/requests/${fixture.id}/checkout`, {
+    method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': 'test-csrf-value' }, body: '{}',
   });
 });

@@ -43,7 +43,7 @@ export async function listMyBorrowRequests(page = 1, status = 'ALL'): Promise<My
 /** US8-1: the signed-in borrower's active loans (CHECKED_OUT). The server applies both the
  *  ownership scope and the status filter; completed loans and other users' loans never arrive. */
 export async function listMyActiveLoans(page = 1): Promise<MyBorrowRequestPage> {
-  const response = await fetch(`${requestsPath}/mine/?page=${page}&status=CHECKED_OUT`, {
+  const response = await fetch(`${baseUrl}/loans/mine?page=${page}&status=active`, {
     credentials: 'include',
     cache: 'no-store',
   });
@@ -79,14 +79,6 @@ export async function updateMyBorrowRequest(
     body: JSON.stringify({ ...changes, purpose: changes.purpose.trim() }),
   });
   return readJson<MyBorrowRequest>(response, 'Unable to update this borrow request.');
-}
-
-/** A borrower confirms pickup of their approved request. */
-export async function checkoutMyBorrowRequest(id: string): Promise<MyBorrowRequest> {
-  const response = await fetch(`${requestsPath}/${encodeURIComponent(id)}/checkout/`, {
-    method: 'POST', credentials: 'include', headers: csrfHeaders(),
-  });
-  return readJson<MyBorrowRequest>(response, 'Unable to check out this request.');
 }
 
 /** Cancellation is a status transition, not a DELETE: keep the request in history. */

@@ -23,7 +23,7 @@ export default function EquipmentDetailPage({ equipmentId, user }: { equipmentId
         <a className="equipment-back-link" href="#catalog">Back to catalog</a>
       </header>
       <section className="equipment-detail-content" aria-live="polite">
-        <DetailContent key={`${equipmentId}:${attempt}`} equipmentId={equipmentId} user={user} retry={() => setAttempt(value => value + 1)} />
+        <DetailContent key={`${equipmentId}:${attempt}:${user?.id}:${user?.is_admin}`} equipmentId={equipmentId} user={user} retry={() => setAttempt(value => value + 1)} />
       </section>
     </main>
   );
@@ -38,7 +38,13 @@ function DetailContent({ equipmentId, user, retry }: { equipmentId: string; user
     if (!equipmentId) return;
     let active = true;
     void getEquipment(equipmentId)
-      .then(result => { if (active) setEquipment(result); })
+      .then(result => {
+        if (!active) return;
+        // US8-4: a disabled listing is hidden from borrowers even by direct link; an
+        // admin or its own provider can still open it.
+        if (result.is_suspended && !user?.is_admin && result.provider !== user?.id) setNotFound(true);
+        else setEquipment(result);
+      })
       .catch(cause => {
         if (!active) return;
         if (cause instanceof EquipmentError && cause.status === 401) {
@@ -50,7 +56,7 @@ function DetailContent({ equipmentId, user, retry }: { equipmentId: string; user
       })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [equipmentId]);
+  }, [equipmentId, user?.id, user?.is_admin]);
   if (loading) return <p role="status">Loading equipment...</p>;
   if (notFound) return <div className="equipment-empty"><h1>Equipment not found</h1><p>This item does not exist or is no longer visible in the catalog.</p></div>;
   if (error) return <div className="equipment-error"><p className="form-message form-message-error" role="alert">{error}</p><button className="register-button" onClick={retry}>Try again</button></div>;

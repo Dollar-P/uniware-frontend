@@ -59,3 +59,8 @@
   color: var(--text-secondary, #637083);
   font-size: 0.875rem;
 }
+
+/* US6-2 / US6-3 handover record on the provider request detail */
+.provider-handover { display: flex; flex-direction: column; gap: 12px; }
+.provider-handover h2 { margin: 0; font-size: 19px; font-weight: 550; }
+.provider-handover-summary { margin: 0; line-height: 1.5; }

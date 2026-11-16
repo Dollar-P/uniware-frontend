@@ -105,17 +105,18 @@ function CatalogResults({ page, search, filters, setPage, retry }: {
   
   if (error) return <div className="catalog-state" role="alert"><p>{error}</p><button className="register-button" onClick={retry}>Try again</button></div>;
   if (!data) return <p className="catalog-state" role="status">Loading catalog...</p>;
+  const { results, count } = data;
   return (
     <>
       <p className="catalog-count" role="status">
-        {data.count} item{data.count === 1 ? '' : 's'}{' '}
+        {count} item{count === 1 ? '' : 's'}{' '}
         {search
           ? `matching “${search}”${filtered ? ' and your filters' : ''}`
           : filtered
             ? 'matching your filters'
             : 'in the catalog'}
       </p>
-      {data.results.length === 0 ? (
+      {results.length === 0 ? (
         <div className="catalog-state">
           <h2>
             {search
@@ -136,7 +137,7 @@ function CatalogResults({ page, search, filters, setPage, retry }: {
         </div>
       ) : (
         <ul className="catalog-grid" aria-label="Equipment catalog">
-          {data.results.map(item => (
+          {results.map(item => (
             <li key={item.id}>
               <a className="catalog-card" href={`#equipment/${encodeURIComponent(item.id)}`} aria-label={`View ${item.name}`}>
                 <div className="catalog-card-art" aria-hidden="true">{item.category.name.slice(0, 1)}</div>

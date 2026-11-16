@@ -123,3 +123,49 @@ describe('equipment discovery integration', () => {
     expect(screen.queryByText('Microscope')).not.toBeInTheDocument();
   });
 });
+
+describe('US8-4 disabled listings are hidden from borrowers', () => {
+  const suspended: Equipment = {
+    ...item, id: 'eq-9', name: 'Broken Drone', admin_suspended: true, is_suspended: true, suspension_reason: 'Misleading photos',
+  };
+  const page = (results: Equipment[]) => ({ results, count: results.length, next: null, previous: null });
+  beforeEach(() => { window.history.replaceState(null, '', '/'); });
+  afterEach(() => { vi.restoreAllMocks(); });
+
+  it('leaves a suspended listing out of the borrower catalog and out of its count', async () => {
+    vi.spyOn(api, 'listEquipment').mockResolvedValue(page([item, suspended]));
+    render(catalog);
+    expect(await screen.findByRole('link', { name: 'View Microscope' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'View Broken Drone' })).not.toBeInTheDocument();
+    expect(screen.getByText('1 item in the catalog')).toBeInTheDocument();
+  });
+
+  it('shows the empty state when every listing on the page is suspended', async () => {
+    vi.spyOn(api, 'listEquipment').mockResolvedValue(page([suspended]));
+    render(catalog);
+    expect(await screen.findByRole('heading', { name: 'No equipment to show' })).toBeInTheDocument();
+  });
+
+  it('still lists it for an admin and for the provider who owns it', async () => {
+    vi.spyOn(api, 'listEquipment').mockResolvedValue(page([suspended]));
+    const first = render(<CatalogPage user={{ ...user, is_admin: true }} onLogout={vi.fn()} loggingOut={false} logoutError="" />);
+    expect(await screen.findByRole('link', { name: 'View Broken Drone' })).toBeInTheDocument();
+    first.unmount();
+    render(<CatalogPage user={{ ...user, id: 'provider', is_provider: true }} onLogout={vi.fn()} loggingOut={false} logoutError="" />);
+    expect(await screen.findByRole('link', { name: 'View Broken Drone' })).toBeInTheDocument();
+  });
+
+  it('answers not found when a borrower opens a suspended listing by direct link', async () => {
+    vi.spyOn(api, 'getEquipment').mockResolvedValue(suspended);
+    render(<EquipmentDetailPage equipmentId={suspended.id} user={user} />);
+    expect(await screen.findByRole('heading', { name: 'Equipment not found' })).toBeInTheDocument();
+    expect(screen.queryByText('Broken Drone')).not.toBeInTheDocument();
+    expect(screen.queryByText('Misleading photos')).not.toBeInTheDocument();
+  });
+
+  it('lets an admin open the same suspended listing', async () => {
+    vi.spyOn(api, 'getEquipment').mockResolvedValue(suspended);
+    render(<EquipmentDetailPage equipmentId={suspended.id} user={{ ...user, is_admin: true }} />);
+    expect(await screen.findByRole('heading', { name: 'Broken Drone' })).toBeInTheDocument();
+  });
+});

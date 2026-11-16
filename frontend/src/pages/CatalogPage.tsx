@@ -62,13 +62,14 @@ export default function CatalogPage({ user, onLogout, loggingOut, logoutError }:
         </div>
       </form>
       {logoutError && <p className="form-message form-message-error" role="alert">{logoutError}</p>}
-      <CatalogResults key={JSON.stringify([page, attempt, search, filters])} page={page} search={search} setPage={setPage} filters={filters} retry={() => setAttempt(value => value + 1)} />
+      <CatalogResults key={JSON.stringify([page, attempt, search, filters])} user={user} page={page} search={search} setPage={setPage} filters={filters} retry={() => setAttempt(value => value + 1)} />
 
     </main>
   );
 }
 
-function CatalogResults({ page, search, filters, setPage, retry }: {
+function CatalogResults({ user, page, search, filters, setPage, retry }: {
+  user: RegisterResponse;
   page: number;
   search: string;
   filters: Filters;
@@ -105,17 +106,22 @@ function CatalogResults({ page, search, filters, setPage, retry }: {
   
   if (error) return <div className="catalog-state" role="alert"><p>{error}</p><button className="register-button" onClick={retry}>Try again</button></div>;
   if (!data) return <p className="catalog-state" role="status">Loading catalog...</p>;
+  // US8-4: a listing an admin has disabled (or whose owner is suspended) must not be
+  // discoverable by borrowers. The API still returns it and has no parameter that leaves
+  // out only suspended items, so they are dropped here. Admins and the owner still see it.
+  const results = data.results.filter(item => canSeeSuspended(item, user));
+  const count = data.count - (data.results.length - results.length);
   return (
     <>
       <p className="catalog-count" role="status">
-        {data.count} item{data.count === 1 ? '' : 's'}{' '}
+        {count} item{count === 1 ? '' : 's'}{' '}
         {search
           ? `matching “${search}”${filtered ? ' and your filters' : ''}`
           : filtered
             ? 'matching your filters'
             : 'in the catalog'}
       </p>
-      {data.results.length === 0 ? (
+      {results.length === 0 ? (
         <div className="catalog-state">
           <h2>
             {search
@@ -136,7 +142,7 @@ function CatalogResults({ page, search, filters, setPage, retry }: {
         </div>
       ) : (
         <ul className="catalog-grid" aria-label="Equipment catalog">
-          {data.results.map(item => (
+          {results.map(item => (
             <li key={item.id}>
               <a className="catalog-card" href={`#equipment/${encodeURIComponent(item.id)}`} aria-label={`View ${item.name}`}>
                 <div className="catalog-card-art" aria-hidden="true">{item.category.name.slice(0, 1)}</div>
@@ -164,4 +170,9 @@ function CatalogResults({ page, search, filters, setPage, retry }: {
       )}
     </>
   );
+}
+
+/** US8-4: only an admin or the listing's own provider may see a suspended listing. */
+function canSeeSuspended(item: Equipment, user: RegisterResponse): boolean {
+  return !item.is_suspended || user.is_admin || item.provider === user.id;
 }

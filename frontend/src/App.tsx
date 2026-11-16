@@ -22,6 +22,7 @@ type Route = 'profile' | 'signup' | 'login' | 'account' | 'my-equipment' | 'cata
 /** Routes that need a signed-in user: a signed-out visitor is sent to login. */
 function isAuthenticatedRoute(route: Route): boolean {
   return route === 'profile' || route === 'account' || route === 'catalog' || route === 'my-equipment'
+    || route === 'user-management' || route === 'admin-equipment'
     || route === 'provider-requests' || route === 'provider-returns' || route === 'my-requests' || route === 'my-loans'
     || route.startsWith('provider-requests/') || route.startsWith('my-requests/') || route.startsWith('equipment/');
 }

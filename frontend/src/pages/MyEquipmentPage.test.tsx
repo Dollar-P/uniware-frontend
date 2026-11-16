@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import MyEquipmentPage from './MyEquipmentPage';
 import * as api from '../services/equipmentApi';
@@ -37,6 +37,76 @@ describe('MyEquipmentPage', () => {
     vi.spyOn(api, 'listLocations').mockResolvedValue([{ id: 'loc-1', name: 'Building A' }]);
   });
   afterEach(() => vi.restoreAllMocks());
+
+  it('US2-4: requires confirmation and cancellation leaves equipment unchanged', async () => {
+    vi.spyOn(api, 'listMyEquipment').mockResolvedValue(paginate([makeEquipment()]));
+    const archive = vi.spyOn(api, 'archiveEquipment');
+    render(<MyEquipmentPage user={provider} />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Archive' }));
+    expect(screen.getByRole('region', { name: 'Archive Microscope' })).toHaveTextContent('AST-001');
+    expect(screen.getByRole('button', { name: 'Cancel' })).toHaveFocus();
+    expect(archive).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByRole('button', { name: 'Confirm archive' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Archive' })).toHaveFocus();
+    expect(screen.getByText('Available')).toBeInTheDocument();
+    expect(archive).not.toHaveBeenCalled();
+  });
+
+  it('US2-4: prevents duplicate submissions and retains the archived item in inventory', async () => {
+    const list = vi.spyOn(api, 'listMyEquipment').mockResolvedValue(paginate([makeEquipment()]));
+    let resolveArchive!: (equipment: Equipment) => void;
+    const archive = vi.spyOn(api, 'archiveEquipment').mockReturnValue(new Promise(resolve => { resolveArchive = resolve; }));
+    render(<MyEquipmentPage user={provider} />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Archive' }));
+    await userEvent.dblClick(screen.getByRole('button', { name: 'Confirm archive' }));
+    expect(screen.getByRole('button', { name: 'Archiving...' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
+    expect(archive).toHaveBeenCalledExactlyOnceWith('eq-1');
+    await act(async () => resolveArchive(makeEquipment({ status: 'ARCHIVED', archived_at: '2026-11-15T12:00:00Z' })));
+    expect(screen.getByRole('status')).toHaveTextContent('Microscope was archived');
+    expect(screen.getByText('Archived')).toBeInTheDocument();
+    expect(screen.getByText('AST-001')).toBeInTheDocument();
+    expect(screen.getByText('1 item in your inventory')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Archive' })).not.toBeInTheDocument();
+    expect(list).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    [409, 'Equipment with an active reservation or loan cannot be archived.'],
+    [404, 'Not found.'],
+    [403, 'This action requires provider capability.'],
+    [0, 'Network unavailable'],
+  ])('US2-4: shows archive failure (%s) and allows retry without changing the item', async (status, message) => {
+    vi.spyOn(api, 'listMyEquipment').mockResolvedValue(paginate([makeEquipment()]));
+    const archive = vi.spyOn(api, 'archiveEquipment')
+      .mockRejectedValueOnce(new EquipmentError(message, {}, status))
+      .mockResolvedValueOnce(makeEquipment({ status: 'ARCHIVED' }));
+    render(<MyEquipmentPage user={provider} />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Archive' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Confirm archive' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(message);
+    expect(screen.getByText('Available')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Confirm archive' }));
+    expect(await screen.findByText('Archived')).toBeInTheDocument();
+    expect(archive).toHaveBeenCalledTimes(2);
+  });
+
+  it.each(['RESERVED', 'CHECKED_OUT'] as const)('US2-4: explains why %s equipment cannot be archived', async status => {
+    vi.spyOn(api, 'listMyEquipment').mockResolvedValue(paginate([makeEquipment({ status })]));
+    render(<MyEquipmentPage user={provider} />);
+    expect(await screen.findByRole('button', { name: 'Archive' })).toBeDisabled();
+    expect(screen.getByText('Resolve the reservation or loan before archiving.')).toBeInTheDocument();
+  });
+
+  it('US2-4: archived inventory has no edit or archive actions after reload', async () => {
+    vi.spyOn(api, 'listMyEquipment').mockResolvedValue(paginate([makeEquipment({ status: 'ARCHIVED' })]));
+    render(<MyEquipmentPage user={provider} />);
+    expect(await screen.findByText('Archived')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Edit' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Archive' })).not.toBeInTheDocument();
+  });
 
   it('US2-2: lists only the equipment the provider owns', async () => {
     const listSpy = vi.spyOn(api, 'listMyEquipment').mockResolvedValue(paginate([makeEquipment()]));

@@ -7,8 +7,8 @@ import RequestStatusBadge from '../components/requests/RequestStatusBadge';
 import SuspensionNotice from '../components/equipment/SuspensionNotice';
 import BorrowerName from '../components/requests/BorrowerName';
 import ReturnConditionDialog from '../components/requests/ReturnConditionDialog';
-import { approveProviderRequest, confirmProviderReturn, rejectProviderRequest, getProviderRequest, rejectProviderRequest } from '../services/providerRequestsApi';
-import { borrowerLabel, dateLabel, ProviderRequestError } from '../types/borrowRequest';
+import { approveProviderRequest, confirmProviderReturn, rejectProviderRequest, getProviderRequest, returnProviderRequest } from '../services/providerRequestsApi';
+import { dateLabel, ProviderRequestError } from '../types/borrowRequest';
 import type { ProviderBorrowRequest } from '../types/borrowRequest';
 import type { RegisterResponse } from '../types/auth';
 import { ProviderHeader } from './ProviderRequestsPage';
@@ -160,7 +160,6 @@ export default function ProviderRequestDetailPage({ user, requestId }: { user: R
               <div><dt>Returned on</dt><dd>{new Date(request.returned_at).toLocaleString('en-GB')}</dd></div>
             )}
             {request.decision_reason && <div className="provider-request-wide"><dt>Decision reason</dt><dd>{request.decision_reason}</dd></div>}
-            {request.returned_at && <div><dt>Returned on</dt><dd>{new Date(request.returned_at).toLocaleString('en-GB')}</dd></div>}
           </dl>
           <SuspensionNotice equipment={request.equipment} />
           {request.status === 'PENDING' && request.borrower.account_status === 'SUSPENDED' && (

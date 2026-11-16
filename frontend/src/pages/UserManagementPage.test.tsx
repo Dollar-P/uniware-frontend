@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import UserManagementPage from './UserManagementPage';
 import { listUsers, updateUserRoles, updateUserStatus } from '../services/userManagementApi';
@@ -30,7 +30,8 @@ describe('admin suspension controls', () => {
   it('suspends a borrower after confirmation and can reactivate them', async () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true);
     render(<UserManagementPage user={admin} />);
-    const suspend = await screen.findByRole('button', { name: 'Suspend' });
+    const row = await screen.findByRole('row', { name: /borrower@chula.ac.th/ });
+    const suspend = within(row).getByRole('button', { name: 'Suspend' });
     await userEvent.click(suspend);
     await waitFor(() => expect(updateUserStatus).toHaveBeenCalledWith('borrower', 'SUSPENDED'));
     expect(await screen.findByText('Suspended')).toBeInTheDocument();
@@ -42,7 +43,8 @@ describe('admin suspension controls', () => {
   it('does not suspend without confirmation', async () => {
     vi.spyOn(window, 'confirm').mockReturnValue(false);
     render(<UserManagementPage user={admin} />);
-    await userEvent.click(await screen.findByRole('button', { name: 'Suspend' }));
+    const row = await screen.findByRole('row', { name: /borrower@chula.ac.th/ });
+    await userEvent.click(within(row).getByRole('button', { name: 'Suspend' }));
     expect(updateUserStatus).not.toHaveBeenCalled();
     vi.restoreAllMocks();
   });

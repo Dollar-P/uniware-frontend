@@ -111,9 +111,6 @@ export default function MyRequestDetailPage({ user, requestId }: { user: Registe
               {request.return_condition && (
                 <div className="provider-request-wide"><dt>Equipment condition on return</dt><dd>{request.return_condition}</dd></div>
               )}
-              {request.returned_at && (
-                <div><dt>Returned on</dt><dd>{new Date(request.returned_at).toLocaleString('en-GB')}</dd></div>
-              )}
               {request.decided_at && (
                 <div><dt>Decided on</dt><dd>{new Date(request.decided_at).toLocaleString('en-GB')}</dd></div>
               )}

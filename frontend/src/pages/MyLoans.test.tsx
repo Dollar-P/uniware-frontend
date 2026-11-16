@@ -22,6 +22,8 @@ const borrower: RegisterResponse = {
 const equipment: Equipment = {
   id: 'eq-1', asset_id: 'EQ-1001', name: 'Oscilloscope', model: 'DS1054Z',
   description: 'Four-channel digital oscilloscope', provider: 'provider-1',
+  owner: { name: 'Provider', email: 'provider@chula.ac.th', department: 'Engineering' },
+  admin_suspended: false, is_suspended: false, suspension_reason: '',
   category: { id: 'cat-1', name: 'Electronics' }, location: { id: 'loc-1', name: 'Engineering Lab' },
   status: 'CHECKED_OUT', archived_at: null, disabled_at: null,
   created_at: '2026-10-01T09:00:00Z', updated_at: '2026-10-01T09:00:00Z',

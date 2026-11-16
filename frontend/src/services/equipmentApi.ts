@@ -106,6 +106,16 @@ export async function updateEquipment(id: string, data: Partial<EquipmentRequest
   return readJson(response, 'Unable to save your changes. Please try again.');
 }
 
+/** US2-4: retain the item and its history while hiding it from borrowers. */
+export async function archiveEquipment(id: string): Promise<Equipment> {
+  const response = await fetch(`${baseUrl}/equipment/${encodeURIComponent(id)}/archive`, {
+    method: 'POST',
+    credentials: 'include',
+    headers: csrfHeaders(),
+  });
+  return readJson(response, 'Unable to archive equipment. Please try again.');
+}
+
 /** US2-5: reference data for the category and location pickers. Both are unpaginated. */
 export async function listCategories(): Promise<Category[]> {
   const response = await fetch(`${baseUrl}/categories`, { credentials: 'include' });

@@ -115,7 +115,7 @@ function App() {
     return () => { active = false; window.removeEventListener('focus', recheckOnFocus); };
   }, [route, attempt]);
   useEffect(() => {
-    const exactTitles = {
+    const exactTitles: Partial<Record<Route, string>> = {
       profile: 'Your profile',
       login: 'Sign in',
       account: 'Your account',

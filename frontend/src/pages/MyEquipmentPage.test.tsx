@@ -171,7 +171,7 @@ describe('MyEquipmentPage', () => {
     await waitFor(() => expect(createSpy).toHaveBeenCalledWith(expect.objectContaining({
       asset_id: 'AST-002', name: 'Oscilloscope', category_id: 'cat-1', location_id: 'loc-1',
       status: 'AVAILABLE',
-    })));
+    }), { files: [null, null, null], removed: [] }));
     expect(await screen.findByRole('status')).toHaveTextContent('was added to your inventory');
   });
 
@@ -234,7 +234,7 @@ describe('MyEquipmentPage', () => {
 
     await waitFor(() => expect(updateSpy).toHaveBeenCalledWith('eq-1', expect.objectContaining({
       name: 'Microscope MkII',
-    })));
+    }), { files: [null, null, null], removed: [] }));
     expect(await screen.findByText('Microscope MkII')).toBeInTheDocument();
     expect(listSpy).toHaveBeenCalledTimes(1);
   });
